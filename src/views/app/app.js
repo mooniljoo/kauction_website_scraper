@@ -1,8 +1,8 @@
-// const { ipcRenderer, TouchBarPopover } = require("electron");
+const { ipcRenderer, TouchBarPopover } = require("electron");
 const puppeteer = require("puppeteer");
-// const Store = require("electron-store");
+const Store = require("electron-store");
 
-// store = new Store();
+store = new Store();
 
 // //Enter 이벤트 등록
 // function getUrlInput() {
@@ -12,6 +12,16 @@ const puppeteer = require("puppeteer");
 // function toggleCancel() {
 //   console.log("cancel");
 // }
+
+function closeModal(el) {
+  el.parentNode.classList.remove("on");
+  document.getElementById("dimm").remove("on");
+}
+function display_error(e) {
+  document.getElementById("dimm").classList.add("on");
+  document.getElementById("modal").classList.add("on");
+  document.getElementById("modal").querySelector(".cont").innerText = String(e);
+}
 
 function onPress() {
   if (event.key == "Enter") {
@@ -32,123 +42,159 @@ async function scraper(url) {
   await page.goto(url);
   await page.hover(".top_nav");
   await page.click(".top_nav .Premium-on > a");
-  await page.waitForSelector(".artwork");
-  const artworkList = await page.$$(".artwork > a");
+  await page.waitForSelector(".artwork", { timeout: 3000 });
+  //DEPTH-1 : pagination
+  let pageIndex = 2;
+  while (true) {
+    pageIndex++;
+    let paginateButton = await page.$$(".paginate_button.page-item > a");
+    let bool_isNextButtonDisabled = await page.$eval(
+      ".paginate_button.active",
+      (el) => {
+        return el.nextElementSibling.classList.contains("disabled");
+      }
+    );
+    console.log(bool_isNextButtonDisabled);
+    if (bool_isNextButtonDisabled) break;
+    console.log(paginateButton[pageIndex]);
+    paginateButton[pageIndex].click();
+    await page.waitForTimeout(500);
+    //DEPTH-2 : artworks
+    // let artworkIndex = 0;
+    // while (true) {
+    //   artworkIndex++;
+    //   let artworkList = await page.$$(".artwork > a");
+    //   console.log(i, artworkList[artworkIndex]);
+    //   if (!artworkList[artworkIndex]) break;
+    //   artworkList[artworkIndex].click();
+    //   await page.waitForSelector("#work", { timeout: 3000 });
+    //   await page.goBack();
+    //   console.log("Page 1 is complete.");
+    // }
+  }
 
   let res = [];
-  //   for (let i = 0; i < artworkList.length; i++) {
-  // console.log(i);
-  // console.log(artworkList);
-  artworkList[0].click();
-  await page.waitForSelector("#work");
 
-  let info = await page.evaluate(() => {
-    const source = document.querySelector("title")?.innerText;
-    // const auctionTitle = document
-    //   .querySelector(".header-cont > div > p > span")
-    //   .innerText.split(" -")[0];
-    const auctionTitle = document.querySelector(
-      ".header-cont > p > span"
-    )?.innerText;
-    const transactDate = document
-      .querySelector(".header-cont > div > p > span")
-      ?.innerText.split(" ")
-      .slice(0, 3)
-      .join(" ");
-    const number = document.querySelector(".lot-num")?.innerText;
-    const artistBirth = document.querySelector(".writer").innerText;
-    const artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
-    const birth = artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "");
-    const title = document.querySelector(".sub-tit")?.innerText;
-    const materialEdition = document
-      .querySelector(".material > p:nth-child(1)")
-      ?.innerText.replace(/\s/gi, "");
-    const material = materialEdition?.split("(edition")[0];
-    const edition = "(edition" + materialEdition?.split("(edition")[1];
-    const sizeYear = document
-      .querySelector(".material > p:nth-child(2)")
-      ?.innerText.replace(/\s/gi, "");
-    const size = sizeYear?.split("|")[0];
-    const year = sizeYear?.split("|")[1];
-    const estimate = document
-      .querySelector(".es-price > p:nth-child(1)")
-      ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-    const stPrice = document
-      .querySelector(".es-price > p:nth-child(2)")
-      ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-    const signPosition = document
-      .querySelector(".cont")
-      ?.innerText.split("\n")
-      .filter((item) => item.includes("signed"))
-      .join("\n");
-    const sizeEdition = size + " " + edition;
+  //   let info = await page.evaluate(() => {
+  //     const source = document.querySelector("title")?.innerText;
+  //     // const auctionTitle = document
+  //     //   .querySelector(".header-cont > div > p > span")
+  //     //   .innerText.split(" -")[0];
+  //     const auctionTitle = document.querySelector(
+  //       ".header-cont > p > span"
+  //     )?.innerText;
+  //     const transactDate = document
+  //       .querySelector(".header-cont > div > p > span")
+  //       ?.innerText.split(" ")
+  //       .slice(0, 3)
+  //       .join(" ");
+  //     const number = document.querySelector(".lot-num")?.innerText;
+  //     const artistBirth = document.querySelector(".writer").innerText;
+  //     const artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
+  //     const birth = artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "");
+  //     const title = document.querySelector(".sub-tit")?.innerText;
+  //     const materialEdition = document
+  //       .querySelector(".material > p:nth-child(1)")
+  //       ?.innerText.replace(/\s/gi, "");
+  //     const material = materialEdition?.split("(edition")[0];
+  //     const edition = "(edition" + materialEdition?.split("(edition")[1];
+  //     const sizeYear = document
+  //       .querySelector(".material > p:nth-child(2)")
+  //       ?.innerText.replace(/\s/gi, "");
+  //     const size = sizeYear?.split("|")[0];
+  //     const year = sizeYear?.split("|")[1];
+  //     const estimate = document
+  //       .querySelector(".es-price > p:nth-child(1)")
+  //       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
+  //     const stPrice = document
+  //       .querySelector(".es-price > p:nth-child(2)")
+  //       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
+  //     const signPosition = document
+  //       .querySelector(".cont")
+  //       ?.innerText.split("\n")
+  //       .filter((item) => item.includes("signed"))
+  //       .join("\n");
+  //     const sizeEdition = size + " " + edition;
 
-    const artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
-    const artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+  //     const artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+  //     const artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
 
-    const titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
-    const titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+  //     const titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+  //     const titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
 
-    const materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
-    const materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+  //     const materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+  //     const materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
 
-    const certi = "";
-    const winningBid = "";
-    return {
-      number,
-      artistKr,
-      artistEn,
-      titleKr,
-      titleEn,
-      year,
-      certi,
-      sizeEdition,
-      materialKr,
-      materialEn,
-      signPosition,
-      estimate,
-      source,
-      auctionTitle,
-      transactDate,
-      winningBid,
-      signPosition,
-    };
-  });
-  res.push(info);
-  const tbody = document.getElementById("tbody");
-  res.forEach((item) => {
-    tbody.innerHTML += `
-        <tr>
-                    <td>${item.number}</td>
-                    <td>${item.artistKr}</td>
-                    <td>${item.artistEn}</td>
-                    <td>${item.titleKr}</td>
-                    <td>${item.titleEn}</td>
-                    <td>${item.year}</td>
-                    <td>${item.certi}</td>
-                    <td>${item.sizeEdition}</td>
-                    <td>${item.materialKr}</td>
-                    <td>${item.materialEn}</td>
-                    <td>${item.signPosition}</td>
-                    <td>${item.estimate}</td>
-                    <td>${item.source}</td>
-                    <td>${item.auctionTitle}</td>
-                    <td>${item.transactDate}</td>
-                    <td>${item.winningBid}</td>
-        </tr>
-`;
-  });
-  await page.goBack();
-  //   }
-  console.log(artworkList);
-  artworkList[1].click();
-  await page.waitForSelector("#work");
-  await page.goBack();
+  //     const certi = "";
+  //     const winningBid = "";
+  //     return {
+  //       number,
+  //       artistKr,
+  //       artistEn,
+  //       titleKr,
+  //       titleEn,
+  //       year,
+  //       certi,
+  //       sizeEdition,
+  //       materialKr,
+  //       materialEn,
+  //       signPosition,
+  //       estimate,
+  //       source,
+  //       auctionTitle,
+  //       transactDate,
+  //       winningBid,
+  //       signPosition,
+  //     };
+  //   });
+  //   res.push(info);
+  //   const tbody = document.getElementById("tbody");
+  //   res.forEach((item) => {
+  //     tbody.innerHTML += `
+  //         <tr>
+  //                     <td>${item.number}</td>
+  //                     <td>${item.artistKr}</td>
+  //                     <td>${item.artistEn}</td>
+  //                     <td>${item.titleKr}</td>
+  //                     <td>${item.titleEn}</td>
+  //                     <td>${item.year}</td>
+  //                     <td>${item.certi}</td>
+  //                     <td>${item.sizeEdition}</td>
+  //                     <td>${item.materialKr}</td>
+  //                     <td>${item.materialEn}</td>
+  //                     <td>${item.signPosition}</td>
+  //                     <td>${item.estimate}</td>
+  //                     <td>${item.source}</td>
+  //                     <td>${item.auctionTitle}</td>
+  //                     <td>${item.transactDate}</td>
+  //                     <td>${item.winningBid}</td>
+  //         </tr>
+  // `;
+  //   });
+  //   await page.goBack();
+  //   //   }
+  //   if (artworkList) console.log("YEAH!!!!!!!!!!!");
+  //   console.log(artworkList);
+  //   artworkList = await page.$$(".artwork > a");
+  //   console.log(artworkList);
+  //   artworkList[1].click();
+  //   await page.waitForNavigation({ waitUntil: "load" });
+  //   await page
+  //     .waitForSelector("#work", { timeout: 3000 })
+  //     .then(() => {
+  //       page.goBack();
+  //     })
+  //     .catch((e) => {
+  //       console.log("error ocurred : ", e);
+  //       display_error(e);
+  //       ipcRenderer.sendSync("error-display", e);
+  //     });
 
-  console.log(artworkList);
-  artworkList[2].click();
-  await page.waitForSelector("#work");
-  await page.goBack();
+  //   console.log(artworkList);
+  //   artworkList = await page.$$(".artwork > a");
+  //   artworkList[2].click();
+  //   await page.waitForSelector("#work", { timeout: 1000 });
+  //   await page.goBack();
   return res;
 
   //   artworkList.forEach(function (artwork) {
@@ -189,6 +235,7 @@ function onSubmit() {
     // console.log(ipcRenderer.sendSync("console-display", res));
   });
 }
+
 // async function parsing(page) {
 //   let html = await page.evaluate(() => {
 //     let q = [];
