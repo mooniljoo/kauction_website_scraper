@@ -46,13 +46,18 @@ async function parsing(page) {
     const number = document.querySelector(".lot-num")?.innerText;
     const artistBirth = document.querySelector(".writer").innerText;
     const artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
-    const birth = artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "");
+    const birth = artistBirth.includes("(b.")
+      ? artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "")
+      : "";
     const title = document.querySelector(".sub-tit")?.innerText;
     const materialEdition = document
       .querySelector(".material > p:nth-child(1)")
       ?.innerText.replace(/\s/gi, "");
+
     const material = materialEdition?.split("(edition")[0];
-    const edition = "(edition" + materialEdition?.split("(edition")[1];
+    const edition = materialEdition.includes("edition")
+      ? "(edition" + materialEdition?.split("(edition")[1]
+      : "";
     const sizeYear = document
       .querySelector(".material > p:nth-child(2)")
       ?.innerText.replace(/\s/gi, "");
@@ -177,10 +182,10 @@ async function scraper(url) {
       artworkIndex++;
       let artworkList = await page.$$(".artwork > a");
       //check if artwork exists
-      if (!artworkList[artworkIndex]) break;
+      if (artworkList[artworkIndex] == undefined) break;
       //access to new artwork page
       artworkList[artworkIndex].click();
-      await page.waitForSelector("#work", { timeout: 3000 });
+      await page.waitForSelector("#work", { timeout: 5000 });
       //parsing
       let info = await parsing(page);
       res.push(info);
@@ -188,12 +193,13 @@ async function scraper(url) {
       await display_table([info]);
       //go again
       await page.goBack();
-      console.log("artworkIndex", artworkIndex);
       console.log("artwork " + artworkIndex + " has completed.");
+      await page.waitForTimeout(500);
     }
-    console.log("Page " + pageIndex - 1 + " has completed.");
+    console.log("Page " + (pageIndex - 1) + " has completed.");
   }
   console.log("All artworks has parsed and scraped.");
+  await browser.close();
   return res;
 }
 function onSubmit() {
