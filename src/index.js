@@ -59,10 +59,10 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.on("console-display", (event, arg) => {
+ipcMain.on("console-display", (event, arg, filenamePrefix, date) => {
   console.log(arg);
   console.log("create xlsx");
-  jsonToXlsx.write("test.xlsx", "testSheet", arg);
+  jsonToXlsx.write(filenamePrefix + "-" + date + ".xlsx", "testSheet", arg);
   event.returnValue = "complete to create xlsx";
 });
 
