@@ -18,6 +18,55 @@ button {
   font-size: 12px;
   font-family: "Apple SD Gothic Neo", arial, sans-serif;
 }
+.dimm {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.dimm.on {
+  display: flex;
+}
+.modal {
+  display: none;
+  position: absolute;
+  z-index: 999;
+  background: #111;
+  width: 50%;
+  height: 300px;
+  border-radius: 10px;
+  box-shadow: 0 10px 10px rgb(0 0 0 / 50%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+}
+.modal.on {
+  display: flex;
+}
+.btn_close {
+  display: block;
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 10px;
+  font-size: 20px;
+  font-weight: 600;
+  font-style: normal;
+  cursor: pointer;
+}
+.modal > .cont {
+  width: calc(100% - 20px);
+  top: 30px;
+  position: absolute;
+  padding: 10px;
+  font-size: 20px;
+}
 .window_top {
   z-index: 9999;
   position: relative;

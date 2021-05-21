@@ -26,10 +26,10 @@
           </div>
 
           <div class="search_box">
-            <select>
-              <option>K-AUCTION</option>
-              <!-- <option>SEOUL AUCTION</option>
-              <option>ARTDAY</option>
+            <select onchange="onChange(this);">
+              <option value="kauction">K-AUCTION</option>
+              <option value="seoul">SEOUL AUCTION</option>
+              <!-- <option>ARTDAY</option>
               <option>RAIZ ART</option> -->
             </select>
             <div class="icon_box">
@@ -86,6 +86,11 @@
             <tbody id="tbody"></tbody>
           </table>
         </main>
+        <div class="dimm" id="dimm"></div>
+        <div class="modal" id="modal">
+          <i class="btn_close" id="btn_close" onclick="closeModal(this);">X</i>
+          <div class="cont"></div>
+        </div>
       </div>
     </div>
   </body>

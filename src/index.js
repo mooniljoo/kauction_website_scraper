@@ -65,3 +65,8 @@ ipcMain.on("console-display", (event, arg) => {
   jsonToXlsx.write("test.xlsx", "testSheet", arg);
   event.returnValue = "complete to create xlsx";
 });
+
+ipcMain.on("error-display", (event, arg) => {
+  console.log(arg);
+  event.returnValue = "error displayed";
+});
