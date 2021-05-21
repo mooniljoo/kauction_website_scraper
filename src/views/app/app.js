@@ -28,6 +28,108 @@ function onPress() {
     onSubmit();
   }
 }
+
+async function parsing(page) {
+  let info = await page.evaluate(() => {
+    const source = document.querySelector("title")?.innerText;
+    // const auctionTitle = document
+    //   .querySelector(".header-cont > div > p > span")
+    //   .innerText.split(" -")[0];
+    const auctionTitle = document.querySelector(
+      ".header-cont > p > span"
+    )?.innerText;
+    const transactDate = document
+      .querySelector(".header-cont > div > p > span")
+      ?.innerText.split(" ")
+      .slice(0, 3)
+      .join(" ");
+    const number = document.querySelector(".lot-num")?.innerText;
+    const artistBirth = document.querySelector(".writer").innerText;
+    const artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
+    const birth = artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "");
+    const title = document.querySelector(".sub-tit")?.innerText;
+    const materialEdition = document
+      .querySelector(".material > p:nth-child(1)")
+      ?.innerText.replace(/\s/gi, "");
+    const material = materialEdition?.split("(edition")[0];
+    const edition = "(edition" + materialEdition?.split("(edition")[1];
+    const sizeYear = document
+      .querySelector(".material > p:nth-child(2)")
+      ?.innerText.replace(/\s/gi, "");
+    const size = sizeYear?.split("|")[0];
+    const year = sizeYear?.split("|")[1];
+    const estimate = document
+      .querySelector(".es-price > p:nth-child(1)")
+      ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
+    const stPrice = document
+      .querySelector(".es-price > p:nth-child(2)")
+      ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
+    const signPosition = document
+      .querySelector(".cont")
+      ?.innerText.split("\n")
+      .filter((item) => item.includes("signed"))
+      .join("\n");
+    const sizeEdition = size + " " + edition;
+
+    const artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+    const artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+
+    const titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+    const titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+
+    const materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+    const materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+
+    const certi = "";
+    const winningBid = "";
+    return {
+      number,
+      artistKr,
+      artistEn,
+      titleKr,
+      titleEn,
+      year,
+      certi,
+      sizeEdition,
+      materialKr,
+      materialEn,
+      signPosition,
+      estimate,
+      source,
+      auctionTitle,
+      transactDate,
+      winningBid,
+      signPosition,
+    };
+  });
+  return info;
+}
+
+function display_table(arr) {
+  const tbody = document.getElementById("tbody");
+  arr.forEach((item) => {
+    tbody.innerHTML += `
+        <tr>
+                    <td>${item.number}</td>
+                    <td>${item.artistKr}</td>
+                    <td>${item.artistEn}</td>
+                    <td>${item.titleKr}</td>
+                    <td>${item.titleEn}</td>
+                    <td>${item.year}</td>
+                    <td>${item.certi}</td>
+                    <td>${item.sizeEdition}</td>
+                    <td>${item.materialKr}</td>
+                    <td>${item.materialEn}</td>
+                    <td>${item.signPosition}</td>
+                    <td>${item.estimate}</td>
+                    <td>${item.source}</td>
+                    <td>${item.auctionTitle}</td>
+                    <td>${item.transactDate}</td>
+                    <td>${item.winningBid}</td>
+        </tr>
+`;
+  });
+}
 async function configureBrowser() {
   const browser = await puppeteer.launch({
     headless: false,
@@ -37,14 +139,22 @@ async function configureBrowser() {
   return browser;
 }
 async function scraper(url) {
+  //init variables
+  let res = [];
+
+  //ready for browser
   const browser = await configureBrowser();
   const page = await browser.newPage();
+  //access the website
   await page.goto(url);
+
+  //access the current premium auction
   await page.hover(".top_nav");
   await page.click(".top_nav .Premium-on > a");
   await page.waitForSelector(".artwork", { timeout: 3000 });
+
   //DEPTH-1 : pagination
-  let pageIndex = 2;
+  let pageIndex = 1;
   while (true) {
     pageIndex++;
     let paginateButton = await page.$$(".paginate_button.page-item > a");
@@ -54,179 +164,37 @@ async function scraper(url) {
         return el.nextElementSibling.classList.contains("disabled");
       }
     );
-    console.log(bool_isNextButtonDisabled);
+    //check if paginate button is disabled
+    console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
     if (bool_isNextButtonDisabled) break;
-    console.log(paginateButton[pageIndex]);
+    //access to new paginate page
     paginateButton[pageIndex].click();
     await page.waitForTimeout(500);
+
     //DEPTH-2 : artworks
-    // let artworkIndex = 0;
-    // while (true) {
-    //   artworkIndex++;
-    //   let artworkList = await page.$$(".artwork > a");
-    //   console.log(i, artworkList[artworkIndex]);
-    //   if (!artworkList[artworkIndex]) break;
-    //   artworkList[artworkIndex].click();
-    //   await page.waitForSelector("#work", { timeout: 3000 });
-    //   await page.goBack();
-    //   console.log("Page 1 is complete.");
-    // }
+    let artworkIndex = 0;
+    while (true) {
+      artworkIndex++;
+      let artworkList = await page.$$(".artwork > a");
+      //check if artwork exists
+      if (!artworkList[artworkIndex]) break;
+      //access to new artwork page
+      artworkList[artworkIndex].click();
+      await page.waitForSelector("#work", { timeout: 3000 });
+      //parsing
+      let info = await parsing(page);
+      res.push(info);
+      //displaying
+      await display_table([info]);
+      //go again
+      await page.goBack();
+      console.log("artworkIndex", artworkIndex);
+      console.log("artwork " + artworkIndex + " has completed.");
+    }
+    console.log("Page " + pageIndex - 1 + " has completed.");
   }
-
-  let res = [];
-
-  //   let info = await page.evaluate(() => {
-  //     const source = document.querySelector("title")?.innerText;
-  //     // const auctionTitle = document
-  //     //   .querySelector(".header-cont > div > p > span")
-  //     //   .innerText.split(" -")[0];
-  //     const auctionTitle = document.querySelector(
-  //       ".header-cont > p > span"
-  //     )?.innerText;
-  //     const transactDate = document
-  //       .querySelector(".header-cont > div > p > span")
-  //       ?.innerText.split(" ")
-  //       .slice(0, 3)
-  //       .join(" ");
-  //     const number = document.querySelector(".lot-num")?.innerText;
-  //     const artistBirth = document.querySelector(".writer").innerText;
-  //     const artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
-  //     const birth = artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "");
-  //     const title = document.querySelector(".sub-tit")?.innerText;
-  //     const materialEdition = document
-  //       .querySelector(".material > p:nth-child(1)")
-  //       ?.innerText.replace(/\s/gi, "");
-  //     const material = materialEdition?.split("(edition")[0];
-  //     const edition = "(edition" + materialEdition?.split("(edition")[1];
-  //     const sizeYear = document
-  //       .querySelector(".material > p:nth-child(2)")
-  //       ?.innerText.replace(/\s/gi, "");
-  //     const size = sizeYear?.split("|")[0];
-  //     const year = sizeYear?.split("|")[1];
-  //     const estimate = document
-  //       .querySelector(".es-price > p:nth-child(1)")
-  //       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-  //     const stPrice = document
-  //       .querySelector(".es-price > p:nth-child(2)")
-  //       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-  //     const signPosition = document
-  //       .querySelector(".cont")
-  //       ?.innerText.split("\n")
-  //       .filter((item) => item.includes("signed"))
-  //       .join("\n");
-  //     const sizeEdition = size + " " + edition;
-
-  //     const artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
-  //     const artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
-
-  //     const titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
-  //     const titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
-
-  //     const materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
-  //     const materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
-
-  //     const certi = "";
-  //     const winningBid = "";
-  //     return {
-  //       number,
-  //       artistKr,
-  //       artistEn,
-  //       titleKr,
-  //       titleEn,
-  //       year,
-  //       certi,
-  //       sizeEdition,
-  //       materialKr,
-  //       materialEn,
-  //       signPosition,
-  //       estimate,
-  //       source,
-  //       auctionTitle,
-  //       transactDate,
-  //       winningBid,
-  //       signPosition,
-  //     };
-  //   });
-  //   res.push(info);
-  //   const tbody = document.getElementById("tbody");
-  //   res.forEach((item) => {
-  //     tbody.innerHTML += `
-  //         <tr>
-  //                     <td>${item.number}</td>
-  //                     <td>${item.artistKr}</td>
-  //                     <td>${item.artistEn}</td>
-  //                     <td>${item.titleKr}</td>
-  //                     <td>${item.titleEn}</td>
-  //                     <td>${item.year}</td>
-  //                     <td>${item.certi}</td>
-  //                     <td>${item.sizeEdition}</td>
-  //                     <td>${item.materialKr}</td>
-  //                     <td>${item.materialEn}</td>
-  //                     <td>${item.signPosition}</td>
-  //                     <td>${item.estimate}</td>
-  //                     <td>${item.source}</td>
-  //                     <td>${item.auctionTitle}</td>
-  //                     <td>${item.transactDate}</td>
-  //                     <td>${item.winningBid}</td>
-  //         </tr>
-  // `;
-  //   });
-  //   await page.goBack();
-  //   //   }
-  //   if (artworkList) console.log("YEAH!!!!!!!!!!!");
-  //   console.log(artworkList);
-  //   artworkList = await page.$$(".artwork > a");
-  //   console.log(artworkList);
-  //   artworkList[1].click();
-  //   await page.waitForNavigation({ waitUntil: "load" });
-  //   await page
-  //     .waitForSelector("#work", { timeout: 3000 })
-  //     .then(() => {
-  //       page.goBack();
-  //     })
-  //     .catch((e) => {
-  //       console.log("error ocurred : ", e);
-  //       display_error(e);
-  //       ipcRenderer.sendSync("error-display", e);
-  //     });
-
-  //   console.log(artworkList);
-  //   artworkList = await page.$$(".artwork > a");
-  //   artworkList[2].click();
-  //   await page.waitForSelector("#work", { timeout: 1000 });
-  //   await page.goBack();
+  console.log("All artworks has parsed and scraped.");
   return res;
-
-  //   artworkList.forEach(function (artwork) {
-  //     try {
-  //       artwork.click();
-  //       page.waitForSelector("#work");
-  //     } catch (e) {
-  //       if (e instanceof puppeteer.errors.TimeoutError) {
-  //         console.error("시간초과");
-  //         alert("시간초과");
-  //       }
-  //     }
-  //     console.log("시작");
-  //     let row = [];
-  //     page.evaluate(() => {
-  //       console.log("하는중");
-  //       const number = document.querySelector(".lot-num");
-  //       const writer = document.querySelector(".writer");
-  //       //   row.push({ number, writer });
-  //       //   console.log("row", row);
-  //       console.log("number", number);
-  //     });
-
-  //     res.push(...row);
-  //     console.log("끝");
-  //     page.goBack();
-  //   });
-  //   for(let i=0; i<artworkList.length; i++){
-
-  //   }
-  //   console.log(el_premium);
-  //   el_premium.click();
 }
 function onSubmit() {
   let url = "https://www.k-auction.com";
