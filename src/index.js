@@ -14,9 +14,9 @@ if (require("electron-squirrel-startup")) {
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    minWidth: 1024,
+    minWidth: 1340,
     minHeight: 300,
-    width: 1440,
+    width: 1560,
     height: 720,
     // frame: false,
     webPreferences: {
@@ -59,7 +59,7 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.on("create_xlsx", (event, res, filenamePrefix, date) => {
+ipcMain.on("create_xlsx", (event, res, filenamePrefix) => {
   // console.log(res);
   try {
     let source = res[0].source;
@@ -73,13 +73,14 @@ ipcMain.on("create_xlsx", (event, res, filenamePrefix, date) => {
     let date = year + mon + day;
     // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
     let auctionTitle = res[0].auctionTitle.split(" ")[0];
+    let fileName = source + "_" + date + "_" + auctionTitle;
     jsonToXlsx.write(
-      source + "_" + date + "_" + auctionTitle + ".xlsx", //fileName
+      fileName + ".xlsx", //fileName
       date + "_" + auctionTitle, //sheetName
       res
     );
     console.log("XLSX has created.");
-    event.returnValue = true;
+    event.returnValue = fileName;
   } catch (e) {
     console.error(e);
     event.returnValue = e;

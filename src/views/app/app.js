@@ -1,34 +1,79 @@
 const { ipcRenderer, TouchBarPopover } = require("electron");
 const puppeteer = require("puppeteer");
+const shell = require("electron").shell;
 const Store = require("electron-store");
 
 store = new Store();
 toggleCancel = true;
+fileName = "";
 
-//Enter 이벤트 등록
-function cancel() {
-  console.log("Press the Cancel");
-  toggleCancel = false;
-  openModal("취소되었습니다.");
-  toggleCancel = true;
+function setLoading() {
+  document.querySelector("nav").classList.add("loading");
+  document.getElementById("btnRunning").classList.add("disabled");
+  document.getElementById("btnCancel").classList.remove("disabled");
+  document.getElementById("btnOpenfile").classList.add("disabled");
+}
+function unsetLoading() {
+  document.querySelector("nav").classList.remove("loading");
+  document.getElementById("btnRunning").classList.remove("disabled");
+  document.getElementById("btnCancel").classList.add("disabled");
+  document.getElementById("btnOpenfile").classList.remove("disabled");
+}
+function cancel(el) {
+  if (el.classList.contains("disabled")) {
+    console.log("This button is disabled.");
+  } else {
+    console.log("Press the Cancel");
+    toggleCancel = false;
+    openModal("취소되었습니다.");
+  }
+}
+function openFolder(el) {
+  if (el.classList.contains("disabled")) {
+    console.log("This button is disabled.");
+  } else {
+    let path = __dirname;
+    console.log("open the folder", path);
+    shell.showItemInFolder(path);
+  }
+}
+function openFile(el) {
+  if (el.classList.contains("disabled")) {
+    console.log("This button is disabled.");
+  } else {
+    if (fileName) {
+      let path = __dirname + "\\" + fileName + ".xlsx";
+      console.log("open the file", path);
+      shell.showItemInFolder(path);
+    }
+  }
 }
 
 function closeModal(el) {
   document.querySelector("body").style.overflow = "auto";
   el.parentNode.classList.remove("on");
   document.getElementById("dimm").classList.remove("on");
+  toggleCancel = true;
 }
 function openModal(msg) {
   document.querySelector("body").style.overflow = "hidden";
   document.getElementById("dimm").classList.add("on");
   document.getElementById("modal").classList.add("on");
-  document.getElementById("modal").querySelector(".cont").innerText =
-    String(msg);
+  unsetLoading();
+  if (msg && !msg.includes("Error")) {
+    document.getElementById("modal").querySelector(".cont").innerText =
+      String(msg);
+  } else {
+    document.getElementById("modal").querySelector(".cont").innerText =
+      "문제가 발생했습니다🤦‍♂️\n프로그램을 다시시작해주세요😥\n" + String(msg);
+  }
 }
 
 async function parsing(page) {
   let info = await page.evaluate(() => {
-    const source = document.querySelector("title")?.innerText;
+    const source = document.querySelector("title")
+      ? document.querySelector("title").innerText
+      : "";
     // const auctionTitle = document
     //   .querySelector(".header-cont > div > p > span")
     //   .innerText.split(" -")[0];
@@ -60,9 +105,15 @@ async function parsing(page) {
       ?.innerText.replace(/\s/gi, "");
     const size = sizeYear?.split("|")[0];
     const year = sizeYear?.split("|")[1];
+    const wbPrice = document.querySelector(".wb-price > p:nth-child(1)");
+    const winningBidUnit = wbPrice ? wbPrice.replace(/[^A-Z]/g, "") : "";
+    const winningBid = wbPrice ? wbPrice.replace(/[A-Z]/g, "") : "";
     const estimate = document
       .querySelector(".es-price > p:nth-child(1)")
       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
+    const estimateUnit = estimate?.replace(/[^A-Z]/g, "");
+    const estimateMin = estimate?.replace(/[A-Z]/g, "").split("~")[0];
+    const estimateMax = estimate?.replace(/[A-Z]/g, "").split("~")[1];
     const stPrice = document
       .querySelector(".es-price > p:nth-child(2)")
       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
@@ -83,7 +134,6 @@ async function parsing(page) {
     const materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
 
     const certi = "";
-    const winningBid = "";
     return {
       number,
       artistKr,
@@ -96,12 +146,14 @@ async function parsing(page) {
       materialKr,
       materialEn,
       signPosition,
-      estimate,
       source,
       auctionTitle,
       transactDate,
+      winningBidUnit,
       winningBid,
-      signPosition,
+      estimateUnit,
+      estimateMin,
+      estimateMax,
     };
   });
   return info;
@@ -123,11 +175,14 @@ function display_table(arr) {
                     <td>${item.materialKr}</td>
                     <td>${item.materialEn}</td>
                     <td>${item.signPosition}</td>
-                    <td>${item.estimate}</td>
                     <td>${item.source}</td>
                     <td>${item.auctionTitle}</td>
                     <td>${item.transactDate}</td>
+                    <td>${item.winningBidUnit}</td>
                     <td>${item.winningBid}</td>
+                    <td>${item.estimateUnit}</td>
+                    <td>${item.estimateMin}</td>
+                    <td>${item.estimateMax}</td>
         </tr>
 `;
   });
@@ -141,6 +196,7 @@ async function configureBrowser() {
   return browser;
 }
 async function scraper(url) {
+  setLoading();
   //init variables
   let res = [];
 
@@ -150,75 +206,80 @@ async function scraper(url) {
   //access the website
   await page.goto(url, { waitUntil: "domcontentloaded" });
 
-  //access the current premium auction
-  await page.hover(".top_nav");
-  await page.click(".top_nav .Premium-on > a");
-  await page.waitForSelector(".paginate_button.active", { timeout: 3000 });
+  try {
+    //access the current premium auction
+    await page.hover(".top_nav");
+    await page.click(".top_nav .Premium-on > a");
+    await page.waitForSelector(".paginate_button.active", { timeout: 3000 });
 
-  //DEPTH-1 : pagination
-  let pageIndex = 6;
-  while (toggleCancel) {
-    pageIndex++;
-    let paginateButton = await page.$$(".paginate_button.page-item > a");
-    let bool_isNextButtonDisabled = await page.$eval(
-      ".paginate_button.active",
-      (el) => {
-        return el.nextElementSibling.classList.contains("disabled");
-      }
-    );
-    //check if paginate button is disabled
-    console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
-    if (bool_isNextButtonDisabled) break;
-    //access to new paginate page
-    paginateButton[pageIndex].click();
-    await page.waitForTimeout(500);
-
-    //DEPTH-2 : artworks
-    let artworkIndex = 0;
+    //DEPTH-1 : pagination
+    let pageIndex = 7;
     while (toggleCancel) {
-      artworkIndex++;
-      let artworkList = await page.$$(".artwork > a");
-      //check if artwork exists
-      if (artworkList[artworkIndex] == undefined) break;
-      //access to new artwork page
-      artworkList[artworkIndex].click();
+      pageIndex++;
+      let paginateButton = await page.$$(".paginate_button.page-item > a");
+      let bool_isNextButtonDisabled = await page.$eval(
+        ".paginate_button.active",
+        (el) => {
+          return el.nextElementSibling.classList.contains("disabled");
+        }
+      );
+      //check if paginate button is disabled
+      console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
+      if (bool_isNextButtonDisabled) break;
+      //access to new paginate page
+      paginateButton[pageIndex].click();
       await page.waitForTimeout(500);
-      await page.waitForSelector("#work", { timeout: 5000 });
-      //parsing
-      let info = await parsing(page);
-      res.push(info);
-      //displaying
-      await display_table([info]);
-      //go again
-      await page.goBack();
-      console.log("artwork " + artworkIndex + " has completed.");
-      await page.waitForTimeout(500);
+
+      //DEPTH-2 : artworks
+      let artworkIndex = 0;
+      while (toggleCancel) {
+        artworkIndex++;
+        let artworkList = await page.$$(".artwork > a");
+        //check if artwork exists
+        if (artworkList[artworkIndex] == undefined) break;
+        //access to new artwork page
+        artworkList[artworkIndex].click();
+        await page.waitForTimeout(500);
+        await page.waitForSelector("#work", { timeout: 5000 });
+        //parsing
+        let info = await parsing(page);
+        res.push(info);
+        //displaying
+        await display_table([info]);
+        //go again
+        await page.goBack();
+        console.log("artwork " + artworkIndex + " has completed.");
+        await page.waitForTimeout(500);
+      }
+      console.log("Page " + (pageIndex - 1) + " has completed.");
     }
-    console.log("Page " + (pageIndex - 1) + " has completed.");
+    console.log("All artworks has parsed and scraped.");
+    await browser.close();
+    return res;
+  } catch (e) {
+    openModal(e);
   }
-  console.log("All artworks has parsed and scraped.");
-  await browser.close();
-  return res;
 }
-function onSubmit() {
-  let el_tbody = document.getElementById("tbody");
-  if (el_tbody.innerHTML) el_tbody.innerHTML = "";
-  let url = "https://www.k-auction.com";
-  let filenamePrefix = "kauction";
-  let date = "210521";
-  scraper(url).then((res) => {
-    console.log(res);
-    let bool_resp = ipcRenderer.sendSync(
-      "create_xlsx",
-      res,
-      filenamePrefix,
-      date
-    );
-    console.log(bool_resp);
-    if (bool_resp) {
-      openModal("파일 저장에 성공하였습니다.");
-    } else {
-      openModal("파일 저장에 실패하였습니다." + bool_resp);
-    }
-  });
+function onSubmit(el) {
+  if (el.classList.contains("disabled")) {
+    console.log("This button is disabled.");
+  } else {
+    let el_tbody = document.getElementById("tbody");
+    if (el_tbody.innerHTML) el_tbody.innerHTML = "";
+    let url = "https://www.k-auction.com";
+    let filenamePrefix = "kauction";
+    scraper(url).then((res) => {
+      console.log(res);
+      let resp = String(
+        ipcRenderer.sendSync("create_xlsx", res, filenamePrefix)
+      );
+      console.log(resp);
+      if (resp && !resp.includes("Error")) {
+        fileName = resp;
+        openModal('파일이 생성되었습니다😊👍\n"' + resp + '.xlsx"');
+      } else {
+        openModal("파일생성에 실패했습니다👀\n" + resp);
+      }
+    });
+  }
 }

@@ -157,31 +157,6 @@ main {
   width: 482px;
   width: auto;
 }
-.loading {
-  display: none;
-}
-.loading.active > .img {
-  display: flex;
-  width: 30px;
-  height: 30px;
-  background-image: url(./image/grey-spinning-wheel.gif);
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-size: 100%;
-  margin: auto;
-}
-.loading.active {
-  display: block;
-  position: absolute;
-  background-color: rgba(0, 0, 0, 0.3);
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
 input {
   background-color: transparent;
   border: none;
@@ -233,12 +208,159 @@ table {
 nav {
   padding: 10px 0;
 }
+nav.loading > .state > b {
+  display: inline;
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 1em;
+  letter-spacing: 1.5px;
+  text-align: center;
+  width: 155px;
+  margin-top: 20px;
+  -webkit-animation: fade 2s infinite;
+  -moz-animation: fade 2s infinite;
+}
+nav > .state > .stick,
+nav > .state > b {
+  display: none;
+}
+nav.loading > .state > .stick {
+  display: inline-block;
+  width: 30px;
+  height: 3px;
+  background: #fff;
+  margin-left: -8px;
+}
+
+nav.loading > .state > .stick:nth-child(n) {
+  transform: rotate(30deg);
+  -ms-transform: rotate(30deg); /* IE 9 */
+  -webkit-transform: rotate(30deg); /* Safari and Chrome */
+  -moz-transform: rotate(30deg);
+  -webkit-animation: fall 2s infinite;
+  -moz-animation: fall 2s infinite;
+}
+nav.loading > .state > .stick:nth-child(2n) {
+  transform: rotate(-30deg);
+  -ms-transform: rotate(-30deg); /* IE 9 */
+  -webkit-transform: rotate(-30deg); /* Safari and Chrome */
+  -moz-transform: rotate(-30deg);
+  -webkit-animation: rise 2s infinite;
+  -moz-animation: rise 2s infinite;
+}
+
+@-webkit-keyframes rise {
+  50% {
+    transform: rotate(30deg);
+    -ms-transform: rotate(30deg); /* IE 9 */
+    -webkit-transform: rotate(30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+@-moz-keyframes rise {
+  50% {
+    transform: rotate(30deg);
+    -ms-transform: rotate(30deg); /* IE 9 */
+    -webkit-transform: rotate(30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+@-o-keyframes rise {
+  50% {
+    transform: rotate(30deg);
+    -ms-transform: rotate(30deg); /* IE 9 */
+    -webkit-transform: rotate(30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+@keyframes rise {
+  50% {
+    transform: rotate(30deg);
+    -ms-transform: rotate(30deg); /* IE 9 */
+    -webkit-transform: rotate(30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+
+@-webkit-keyframes fall {
+  50% {
+    transform: rotate(-30deg);
+    -ms-transform: rotate(-30deg); /* IE 9 */
+    -webkit-transform: rotate(-30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+@-moz-keyframes fall {
+  50% {
+    transform: rotate(-30deg);
+    -ms-transform: rotate(-30deg); /* IE 9 */
+    -webkit-transform: rotate(-30deg);
+    -moz-transform: rotate(-30deg);
+  }
+}
+@-o-keyframes fall {
+  50% {
+    transform: rotate(-30deg);
+    -ms-transform: rotate(-30deg); /* IE 9 */
+    -webkit-transform: rotate(-30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+@keyframes fall {
+  50% {
+    transform: rotate(-30deg);
+    -ms-transform: rotate(-30deg); /* IE 9 */
+    -webkit-transform: rotate(-30deg);
+    -moz-transform: rotate(30deg);
+  }
+}
+
+@-webkit-keyframes fade {
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@-moz-keyframes fade {
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@-o-keyframes fade {
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fade {
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 .btn_primary {
   background-color: #007aff;
 }
 .btn_primary:hover,
 .btn_primary:focus {
   background-color: #268fff;
+}
+.btn_info {
+  background-color: #949494;
+}
+.btn_info:hover,
+.btn_info:focus {
+  background-color: #747474;
 }
 .btn_danger {
   background-color: #ff493c;
@@ -262,7 +384,9 @@ nav {
   background-color: #ffbe44;
 }
 .btn.disabled {
-  background-color: #666;
+  background-color: #333 !important;
+  color: #555 !important;
+  cursor: auto !important;
 }
 .btn {
   display: inline-block;
@@ -355,13 +479,8 @@ tr:nth-child(2n) {
     background-color: #666;
   }
 }
-@media (min-width: 1100px) {
+@media (min-width: 1340px) {
   body {
-    font-size: 13px;
-  }
-}
-@media (min-width: 1200px) {
-  body {
-    font-size: 14px;
+    font-size: 12px;
   }
 }
