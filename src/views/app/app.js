@@ -3,30 +3,27 @@ const puppeteer = require("puppeteer");
 const Store = require("electron-store");
 
 store = new Store();
+toggleCancel = true;
 
-// //Enter 이벤트 등록
-// function getUrlInput() {
-//   let url = document.getElementById("url").value;
-//   return url;
-// }
-// function toggleCancel() {
-//   console.log("cancel");
-// }
+//Enter 이벤트 등록
+function cancel() {
+  console.log("Press the Cancel");
+  toggleCancel = false;
+  openModal("취소되었습니다.");
+  toggleCancel = true;
+}
 
 function closeModal(el) {
+  document.querySelector("body").style.overflow = "auto";
   el.parentNode.classList.remove("on");
-  document.getElementById("dimm").remove("on");
+  document.getElementById("dimm").classList.remove("on");
 }
-function display_error(e) {
+function openModal(msg) {
+  document.querySelector("body").style.overflow = "hidden";
   document.getElementById("dimm").classList.add("on");
   document.getElementById("modal").classList.add("on");
-  document.getElementById("modal").querySelector(".cont").innerText = String(e);
-}
-
-function onPress() {
-  if (event.key == "Enter") {
-    onSubmit();
-  }
+  document.getElementById("modal").querySelector(".cont").innerText =
+    String(msg);
 }
 
 async function parsing(page) {
@@ -151,16 +148,16 @@ async function scraper(url) {
   const browser = await configureBrowser();
   const page = await browser.newPage();
   //access the website
-  await page.goto(url);
+  await page.goto(url, { waitUntil: "domcontentloaded" });
 
   //access the current premium auction
   await page.hover(".top_nav");
   await page.click(".top_nav .Premium-on > a");
-  await page.waitForSelector(".artwork", { timeout: 3000 });
+  await page.waitForSelector(".paginate_button.active", { timeout: 3000 });
 
   //DEPTH-1 : pagination
-  let pageIndex = 1;
-  while (true) {
+  let pageIndex = 6;
+  while (toggleCancel) {
     pageIndex++;
     let paginateButton = await page.$$(".paginate_button.page-item > a");
     let bool_isNextButtonDisabled = await page.$eval(
@@ -178,13 +175,14 @@ async function scraper(url) {
 
     //DEPTH-2 : artworks
     let artworkIndex = 0;
-    while (true) {
+    while (toggleCancel) {
       artworkIndex++;
       let artworkList = await page.$$(".artwork > a");
       //check if artwork exists
       if (artworkList[artworkIndex] == undefined) break;
       //access to new artwork page
       artworkList[artworkIndex].click();
+      await page.waitForTimeout(500);
       await page.waitForSelector("#work", { timeout: 5000 });
       //parsing
       let info = await parsing(page);
@@ -203,13 +201,24 @@ async function scraper(url) {
   return res;
 }
 function onSubmit() {
+  let el_tbody = document.getElementById("tbody");
+  if (el_tbody.innerHTML) el_tbody.innerHTML = "";
   let url = "https://www.k-auction.com";
   let filenamePrefix = "kauction";
   let date = "210521";
   scraper(url).then((res) => {
     console.log(res);
-    console.log(
-      ipcRenderer.sendSync("console-display", res, filenamePrefix, date)
+    let bool_resp = ipcRenderer.sendSync(
+      "create_xlsx",
+      res,
+      filenamePrefix,
+      date
     );
+    console.log(bool_resp);
+    if (bool_resp) {
+      openModal("파일 저장에 성공하였습니다.");
+    } else {
+      openModal("파일 저장에 실패하였습니다." + bool_resp);
+    }
   });
 }

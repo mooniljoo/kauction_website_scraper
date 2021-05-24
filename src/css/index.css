@@ -60,6 +60,12 @@ button {
   font-style: normal;
   cursor: pointer;
 }
+.modal .btn {
+  bottom: 0;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
 .modal > .cont {
   width: calc(100% - 20px);
   top: 30px;
