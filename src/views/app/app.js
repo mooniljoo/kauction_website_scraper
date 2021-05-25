@@ -60,12 +60,17 @@ function openModal(msg) {
   document.getElementById("dimm").classList.add("on");
   document.getElementById("modal").classList.add("on");
   unsetLoading();
-  if (msg && !msg.includes("Error")) {
-    document.getElementById("modal").querySelector(".cont").innerText =
-      String(msg);
+  if (msg) {
+    msg = String(msg);
+    if (msg.includes("Error")) {
+      document.getElementById("modal").querySelector(".cont").innerText =
+        "문제가 발생했습니다🤦‍♂️\n프로그램을 다시시작해주세요😥\n" + msg;
+    } else {
+      document.getElementById("modal").querySelector(".cont").innerText = msg;
+    }
   } else {
     document.getElementById("modal").querySelector(".cont").innerText =
-      "문제가 발생했습니다🤦‍♂️\n프로그램을 다시시작해주세요😥\n" + String(msg);
+      "알 수 없는 문제가 발생했습니다.\n" + msg;
   }
 }
 

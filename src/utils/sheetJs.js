@@ -19,7 +19,8 @@ function writeXLSX(filename, sheetname, obj, order) {
     });
     process.stdin.on("end", processData);
   } else {
-    processData();
+    filename = processData();
+    return filename;
   }
 
   function processData() {
@@ -42,7 +43,17 @@ function writeXLSX(filename, sheetname, obj, order) {
     } else {
       o = t;
     }
-    var wb = fs.existsSync(filename) ? xlsx.readFile(filename) : new Workbook();
+    regex = /\([0-9]?\)/; //Numbers in bracket
+    // var wb = fs.existsSync(filename) ? xlsx.readFile(filename) : new Workbook();
+    var wb = new Workbook();
+    while (fs.existsSync(filename + ".xlsx")) {
+      if (regex.test(filename)) {
+        number = Number(filename.split("(")[1].split(")")[0]) + 1;
+        filename = filename.split("(")[0] + "(" + number + ")";
+      } else {
+        filename = filename + " (1)";
+      }
+    }
 
     for (ws_name in o) {
       var sheetdispname = sheetname || ws_name;
@@ -55,7 +66,8 @@ function writeXLSX(filename, sheetname, obj, order) {
       wb.Sheets[sheetdispname] = ws;
       if (process.env.debug) console.log(filename, "/", sheetdispname);
     }
-    xlsx.writeFile(wb, filename);
+    xlsx.writeFile(wb, filename + ".xlsx");
+    return filename;
   }
 
   function convertObjArray(objarray) {

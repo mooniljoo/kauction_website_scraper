@@ -74,8 +74,8 @@ ipcMain.on("create_xlsx", (event, res, filenamePrefix) => {
     // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
     let auctionTitle = res[0].auctionTitle.split(" ")[0];
     let fileName = source + "_" + date + "_" + auctionTitle;
-    jsonToXlsx.write(
-      fileName + ".xlsx", //fileName
+    fileName = jsonToXlsx.write(
+      fileName, //fileName
       date + "_" + auctionTitle, //sheetName
       res
     );
