@@ -204,7 +204,7 @@ function display_table(arr) {
 }
 async function configureBrowser() {
   const browser = await puppeteer.launch({
-    headless: false,
+    headless: true,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
   });
@@ -283,7 +283,7 @@ function onSubmit(el) {
   } else {
     let el_tbody = document.getElementById("tbody");
     if (el_tbody.innerHTML) el_tbody.innerHTML = "";
-    let url = "https://www.k-auction.com";
+    let url = "https://www.k-auction.com/Home/SetLanguage?culture=KOR";
     dirName = document.getElementById("input_dirName").value;
     if (dirName) createFolder(dirName);
     scraper(url).then((res) => {
