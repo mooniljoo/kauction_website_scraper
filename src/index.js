@@ -59,28 +59,34 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.on("create_xlsx", (event, res, filenamePrefix) => {
+ipcMain.on("create_xlsx", (event, res, dirName) => {
   // console.log(res);
   try {
-    let source = res[0].source;
-    let transactDate = res[0].transactDate
-      .replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "")
-      .split(" ");
-    let year = transactDate[0].substr(2);
-    let mon =
-      transactDate[1].length == 1 ? "0" + transactDate[1] : transactDate[1];
-    let day = transactDate[2];
-    let date = year + mon + day;
-    // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
-    let auctionTitle = res[0].auctionTitle.split(" ")[0];
-    let fileName = source + "_" + date + "_" + auctionTitle;
-    fileName = jsonToXlsx.write(
-      fileName, //fileName
-      date + "_" + auctionTitle, //sheetName
-      res
-    );
-    console.log("XLSX has created.");
-    event.returnValue = fileName;
+    if (!res) {
+      return false;
+    } else {
+      let source = res[0].source;
+      let transactDate = res[0].transactDate
+        .replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "")
+        .split(" ");
+      let year = transactDate[0].substr(2);
+      let mon =
+        transactDate[1].length == 1 ? "0" + transactDate[1] : transactDate[1];
+      let day = transactDate[2];
+      let date = year + mon + day;
+      // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
+      let auctionTitle = res[0].auctionTitle.split(" ")[0];
+      let fileName = source + "_" + date + "_" + auctionTitle;
+      console.log("fileName", fileName);
+      fileName = jsonToXlsx.write(
+        dirName, //dirName
+        fileName, //fileName
+        date + "_" + auctionTitle, //sheetName
+        res
+      );
+      console.log("XLSX has created.");
+      event.returnValue = fileName;
+    }
   } catch (e) {
     console.error(e);
     event.returnValue = e;

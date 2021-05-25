@@ -9,7 +9,8 @@ function readXLSX(filename) {
   return require("xlsx").readFile(filename).Sheets;
 }
 
-function writeXLSX(filename, sheetname, obj, order) {
+function writeXLSX(dirName, filename, sheetname, obj, order) {
+  if (!dirName) dirName = "";
   if (process.env.debug) console.log(arguments);
 
   if (!obj) {
@@ -46,6 +47,7 @@ function writeXLSX(filename, sheetname, obj, order) {
     regex = /\([0-9]?\)/; //Numbers in bracket
     // var wb = fs.existsSync(filename) ? xlsx.readFile(filename) : new Workbook();
     var wb = new Workbook();
+    console.log(filename);
     while (fs.existsSync(filename + ".xlsx")) {
       if (regex.test(filename)) {
         number = Number(filename.split("(")[1].split(")")[0]) + 1;
@@ -66,7 +68,7 @@ function writeXLSX(filename, sheetname, obj, order) {
       wb.Sheets[sheetdispname] = ws;
       if (process.env.debug) console.log(filename, "/", sheetdispname);
     }
-    xlsx.writeFile(wb, filename + ".xlsx");
+    xlsx.writeFile(wb, dirName + "/" + filename + ".xlsx");
     return filename;
   }
 

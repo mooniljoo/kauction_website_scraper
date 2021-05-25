@@ -2,22 +2,53 @@ const { ipcRenderer, TouchBarPopover } = require("electron");
 const puppeteer = require("puppeteer");
 const shell = require("electron").shell;
 const Store = require("electron-store");
+const fs = require("fs");
 
 store = new Store();
 toggleCancel = true;
 fileName = "";
 
+// function openFolder(el) {
+//   if (el.classList.contains("disabled")) {
+//     console.log("This button is disabled.");
+//   } else {
+//     let path = "/";
+//     console.log("open the folder", path);
+//     shell.showItemInFolder(path);
+//   }
+// }
+// function openFile(el) {
+//   if (el.classList.contains("disabled")) {
+//     console.log("This button is disabled.");
+//   } else {
+//     if (fileName) {
+//       let path = fileName + ".xlsx";
+//       console.log("open the file", path);
+//       shell.showItemInFolder(path);
+//     }
+//   }
+// }
+function createFolder(dirName) {
+  !fs.existsSync(dirName) && fs.mkdirSync(dirName);
+}
+function onPress() {
+  if (event.keyCode == 13) onSubmit(document.getElementById("btnRunning"));
+}
 function setLoading() {
   document.querySelector("nav").classList.add("loading");
   document.getElementById("btnRunning").classList.add("disabled");
   document.getElementById("btnCancel").classList.remove("disabled");
-  document.getElementById("btnOpenfile").classList.add("disabled");
+  document.getElementById("input_dirName").setAttribute("disabled", "disabled");
+  document.getElementById("input_dirName").classList.add("disabled");
+  // document.getElementById("btnOpenfile").classList.add("disabled");
 }
 function unsetLoading() {
   document.querySelector("nav").classList.remove("loading");
   document.getElementById("btnRunning").classList.remove("disabled");
   document.getElementById("btnCancel").classList.add("disabled");
-  document.getElementById("btnOpenfile").classList.remove("disabled");
+  document.getElementById("input_dirName").removeAttribute("disabled");
+  document.getElementById("input_dirName").classList.remove("disabled");
+  // document.getElementById("btnOpenfile").classList.remove("disabled");
 }
 function cancel(el) {
   if (el.classList.contains("disabled")) {
@@ -28,27 +59,6 @@ function cancel(el) {
     openModal("취소되었습니다.");
   }
 }
-function openFolder(el) {
-  if (el.classList.contains("disabled")) {
-    console.log("This button is disabled.");
-  } else {
-    let path = __dirname;
-    console.log("open the folder", path);
-    shell.showItemInFolder(path);
-  }
-}
-function openFile(el) {
-  if (el.classList.contains("disabled")) {
-    console.log("This button is disabled.");
-  } else {
-    if (fileName) {
-      let path = __dirname + "\\" + fileName + ".xlsx";
-      console.log("open the file", path);
-      shell.showItemInFolder(path);
-    }
-  }
-}
-
 function closeModal(el) {
   document.querySelector("body").style.overflow = "auto";
   el.parentNode.classList.remove("on");
@@ -205,62 +215,64 @@ async function scraper(url) {
   //init variables
   let res = [];
 
-  //ready for browser
-  const browser = await configureBrowser();
-  const page = await browser.newPage();
-  //access the website
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-
   try {
-    //access the current premium auction
-    await page.hover(".top_nav");
-    await page.click(".top_nav .Premium-on > a");
-    await page.waitForSelector(".paginate_button.active", { timeout: 3000 });
-
-    //DEPTH-1 : pagination
-    let pageIndex = 7;
     while (toggleCancel) {
-      pageIndex++;
-      let paginateButton = await page.$$(".paginate_button.page-item > a");
-      let bool_isNextButtonDisabled = await page.$eval(
-        ".paginate_button.active",
-        (el) => {
-          return el.nextElementSibling.classList.contains("disabled");
-        }
-      );
-      //check if paginate button is disabled
-      console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
-      if (bool_isNextButtonDisabled) break;
-      //access to new paginate page
-      paginateButton[pageIndex].click();
-      await page.waitForTimeout(500);
+      //ready for browser
+      const browser = await configureBrowser();
+      const page = await browser.newPage();
+      //access the website
+      await page.goto(url, { waitUntil: "domcontentloaded" });
 
-      //DEPTH-2 : artworks
-      let artworkIndex = 0;
+      //access the current premium auction
+      await page.hover(".top_nav");
+      await page.click(".top_nav .Premium-on > a");
+      await page.waitForSelector(".paginate_button.active", { timeout: 3000 });
+
+      //DEPTH-1 : pagination
+      let pageIndex = 1;
       while (toggleCancel) {
-        artworkIndex++;
-        let artworkList = await page.$$(".artwork > a");
-        //check if artwork exists
-        if (artworkList[artworkIndex] == undefined) break;
-        //access to new artwork page
-        artworkList[artworkIndex].click();
+        pageIndex++;
+        let paginateButton = await page.$$(".paginate_button.page-item > a");
+        let bool_isNextButtonDisabled = await page.$eval(
+          ".paginate_button.active",
+          (el) => {
+            return el.nextElementSibling.classList.contains("disabled");
+          }
+        );
+        //check if paginate button is disabled
+        console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
+        if (bool_isNextButtonDisabled) break;
+        //access to new paginate page
+        paginateButton[pageIndex].click();
         await page.waitForTimeout(500);
-        await page.waitForSelector("#work", { timeout: 5000 });
-        //parsing
-        let info = await parsing(page);
-        res.push(info);
-        //displaying
-        await display_table([info]);
-        //go again
-        await page.goBack();
-        console.log("artwork " + artworkIndex + " has completed.");
-        await page.waitForTimeout(500);
+
+        //DEPTH-2 : artworks
+        let artworkIndex = 0;
+        while (toggleCancel) {
+          artworkIndex++;
+          let artworkList = await page.$$(".artwork > a");
+          //check if artwork exists
+          if (artworkList[artworkIndex] == undefined) break;
+          //access to new artwork page
+          artworkList[artworkIndex].click();
+          await page.waitForTimeout(500);
+          await page.waitForSelector("#work", { timeout: 5000 });
+          //parsing
+          let info = await parsing(page);
+          res.push(info);
+          //displaying
+          await display_table([info]);
+          //go again
+          await page.goBack();
+          console.log("artwork " + artworkIndex + " has completed.");
+          await page.waitForTimeout(500);
+        }
+        console.log("Page " + (pageIndex - 1) + " has completed.");
       }
-      console.log("Page " + (pageIndex - 1) + " has completed.");
+      console.log("All artworks has parsed and scraped.");
+      await browser.close();
+      return res;
     }
-    console.log("All artworks has parsed and scraped.");
-    await browser.close();
-    return res;
   } catch (e) {
     openModal(e);
   }
@@ -272,12 +284,11 @@ function onSubmit(el) {
     let el_tbody = document.getElementById("tbody");
     if (el_tbody.innerHTML) el_tbody.innerHTML = "";
     let url = "https://www.k-auction.com";
-    let filenamePrefix = "kauction";
+    dirName = document.getElementById("input_dirName").value;
+    if (dirName) createFolder(dirName);
     scraper(url).then((res) => {
       console.log(res);
-      let resp = String(
-        ipcRenderer.sendSync("create_xlsx", res, filenamePrefix)
-      );
+      let resp = String(ipcRenderer.sendSync("create_xlsx", res, dirName));
       console.log(resp);
       if (resp && !resp.includes("Error")) {
         fileName = resp;

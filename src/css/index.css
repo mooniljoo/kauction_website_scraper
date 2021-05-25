@@ -454,6 +454,9 @@ tr:nth-child(2n) {
   .themed input {
     color: #ddd;
   }
+  .themed input.disbaled {
+    color: #333;
+  }
   .themed .search_box {
     background: transparent;
     border: 1px solid #555;
