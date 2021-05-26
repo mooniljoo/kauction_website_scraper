@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>K-Auction Scraper</title>
     <link rel="stylesheet" href="../../css/index.css" />
+    <link rel="icon" type="image/x-icon" href="../../icons/favicon.ico" />
     <script src="./app.js"></script>
   </head>
   <body>
@@ -17,17 +18,24 @@
       </header> -->
       <div class="container">
         <nav>
-          <label for="input_dirName">폴더명:</label>
-          <input
-            id="input_dirName"
-            type="text"
-            placeholder="파일이 저장될 폴더명을 입력하세요."
-            value="xlsx"
-            autofocus
-            required
-            onkeypress="onPress()"
-          />
-          <div id="btnRunning" class="btn btn_primary" onclick="onSubmit(this)">
+          <p>
+            <label for="input_dirName">폴더명:</label>
+            <input
+              id="input_dirName"
+              type="text"
+              placeholder="파일이 저장될 폴더명을 입력하세요."
+              value="xlsx"
+              autofocus
+              required
+              onkeypress="onPress()"
+            />
+          </p>
+          <div
+            id="btnRunning"
+            class="btn btn_primary"
+            title="이 버튼을 눌러 실행하세요."
+            onclick="onSubmit(this)"
+          >
             실행
           </div>
           <!-- <div class="btn btn_info" onclick="openFolder(this)">폴더열기</div>

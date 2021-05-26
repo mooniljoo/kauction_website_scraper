@@ -1,6 +1,6 @@
 {
   "name": "scarper",
-  "productName": "Auction Website Scraper",
+  "productName": "K-Auction Scraper",
   "version": "1.0.1",
   "description": "Auction Web Scraper with content",
   "main": "src/index.js",
@@ -24,7 +24,8 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "crawlerjs"
+            "name": "K-Auction Scraper",
+            "icon": "./src/icons/favicon.ico"
           }
         },
         {
