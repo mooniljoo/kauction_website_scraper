@@ -19,6 +19,7 @@ const createWindow = () => {
     width: 1560,
     height: 720,
     // frame: false,
+    icon: path.join(__dirname, "src/icons/app.png"),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

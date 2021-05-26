@@ -19,13 +19,14 @@
   "license": "MIT",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "icon": "src/icons/app.icns"
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "K-Auction Scraper",
-            "icon": "./src/icons/favicon.ico"
+            "name": "K-AuctionScraper"
           }
         },
         {
