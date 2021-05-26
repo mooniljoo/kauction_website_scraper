@@ -29,7 +29,7 @@ fileName = "";
 //   }
 // }
 function createFolder(dirName) {
-  !fs.existsSync(dirName) && fs.mkdirSync(dirName);
+  !fs.existsSync("../" + dirName) && fs.mkdirSync("../" + dirName);
 }
 function onPress() {
   if (event.keyCode == 13) onSubmit(document.getElementById("btnRunning"));
