@@ -286,16 +286,18 @@ function onSubmit(el) {
     let url = "https://www.k-auction.com/Home/SetLanguage?culture=KOR";
     dirName = document.getElementById("input_dirName").value;
     if (dirName) createFolder(dirName);
-    scraper(url).then((res) => {
-      console.log(res);
-      let resp = String(ipcRenderer.sendSync("create_xlsx", res, dirName));
-      console.log(resp);
-      if (resp && !resp.includes("Error")) {
-        fileName = resp;
-        openModal('파일이 생성되었습니다😊👍\n"' + resp + '.xlsx"');
-      } else {
-        openModal("파일생성에 실패했습니다👀\n" + resp);
-      }
-    });
+    scraper(url)
+      .then((res) => {
+        console.log(res);
+        let resp = String(ipcRenderer.sendSync("create_xlsx", res, dirName));
+        console.log(resp);
+        if (resp && !resp.includes("Error")) {
+          fileName = resp;
+          openModal('파일이 생성되었습니다😊👍\n"' + resp + '.xlsx"');
+        } else {
+          openModal("파일생성에 실패했습니다👀\n" + resp);
+        }
+      })
+      .catch((error) => console.error(error));
   }
 }
