@@ -29,7 +29,7 @@ fileName = "";
 //   }
 // }
 function createFolder(dirName) {
-  !fs.existsSync("../" + dirName) && fs.mkdirSync("../" + dirName);
+  !fs.existsSync(dirName) && fs.mkdirSync(dirName);
 }
 function onPress() {
   if (event.keyCode == 13) onSubmit(document.getElementById("btnRunning"));
@@ -226,7 +226,7 @@ async function scraper(url) {
       //access the current premium auction
       await page.hover(".top_nav");
       await page.click(".top_nav .Premium-on > a");
-      await page.waitForSelector(".paginate_button.active", { timeout: 3000 });
+      await page.waitForSelector(".paginate_button.active", { timeout: 9000 });
 
       //DEPTH-1 : pagination
       let pageIndex = 1;
@@ -244,21 +244,22 @@ async function scraper(url) {
         if (bool_isNextButtonDisabled) break;
         //access to new paginate page
         paginateButton[pageIndex].click();
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(1000);
+        await page.waitForSelector(".artwork > a", { timeout: 9000 });
 
         //DEPTH-2 : artworks
         let artworkIndex = 0;
         while (toggleCancel) {
-          artworkIndex++;
           let artworkList = await page.$$(".artwork > a");
           //check if artwork exists
           if (artworkList[artworkIndex] == undefined) break;
           //access to new artwork page
           artworkList[artworkIndex].click();
           await page.waitForTimeout(500);
-          await page.waitForSelector("#work", { timeout: 5000 });
+          await page.waitForSelector("#work", { timeout: 9000 });
           //parsing
           let info = await parsing(page);
+          console.log(info);
           res.push(info);
           //displaying
           await display_table([info]);
@@ -266,6 +267,7 @@ async function scraper(url) {
           await page.goBack();
           console.log("artwork " + artworkIndex + " has completed.");
           await page.waitForTimeout(500);
+          artworkIndex++;
         }
         console.log("Page " + (pageIndex - 1) + " has completed.");
       }
@@ -298,6 +300,9 @@ function onSubmit(el) {
           openModal("파일생성에 실패했습니다👀\n" + resp);
         }
       })
-      .catch((error) => console.error(error));
+      .catch((error) => {
+        console.error(error);
+        openModal(error);
+      });
   }
 }

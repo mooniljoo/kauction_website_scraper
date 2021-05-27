@@ -48,7 +48,7 @@ function writeXLSX(dirname, filename, sheetname, obj, order) {
     // var wb = fs.existsSync(filename) ? xlsx.readFile(filename) : new Workbook();
     var wb = new Workbook();
     console.log(filename);
-    while (fs.existsSync("../" + dirname + "/" + filename + ".xlsx")) {
+    while (fs.existsSync(dirname + "/" + filename + ".xlsx")) {
       if (regex.test(filename)) {
         number = Number(filename.split("(")[1].split(")")[0]) + 1;
         filename = filename.split("(")[0] + "(" + number + ")";
@@ -68,7 +68,7 @@ function writeXLSX(dirname, filename, sheetname, obj, order) {
       wb.Sheets[sheetdispname] = ws;
       if (process.env.debug) console.log(filename, "/", sheetdispname);
     }
-    xlsx.writeFile(wb, "../" + dirname + "/" + filename + ".xlsx");
+    xlsx.writeFile(wb, dirname + "/" + filename + ".xlsx");
     return filename;
   }
 
