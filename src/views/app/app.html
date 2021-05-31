@@ -23,13 +23,21 @@
             <input
               id="input_dirName"
               type="text"
-              placeholder="파일이 저장될 폴더명을 입력하세요."
+              placeholder="파일이 저장될 폴더명을 입력해주세요."
               value="xlsx"
               autofocus
               required
               onkeypress="onPress()"
             />
           </p>
+          <select
+            id="select_auction"
+            class="select"
+            title="정보를 가져올 옥션의 종류를 선택해주세요."
+          >
+            <option value="premium">프리미엄</option>
+            <option value="weekly">위클리</option>
+          </select>
           <div
             id="btnRunning"
             class="btn btn_primary"

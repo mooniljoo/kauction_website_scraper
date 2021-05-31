@@ -404,11 +404,27 @@ nav.loading > .state > .stick:nth-child(2n) {
   display: inline-block;
   cursor: pointer;
   min-width: 120px;
-  color: #fff;
-  padding: 0.7em 0.5em;
+  min-height: 40px;
+  line-height: 40px;
   border-radius: 10px;
   font-style: normal;
   text-align: center;
+  color: #fff;
+}
+
+select {
+  display: inline-block;
+  cursor: pointer;
+  min-width: 120px;
+  color: #fff;
+  height: 42px;
+  line-height: 42px;
+  border-radius: 10px;
+  font-style: normal;
+  text-align: center;
+  padding: 0 0.9em;
+  font-size: 16px;
+  vertical-align: middle;
 }
 .themed,
 .themed input {
@@ -420,13 +436,6 @@ td {
   border-width: 1px;
   border-style: solid;
   border-color: #e7e7e7;
-}
-select {
-  border-radius: 23px;
-  padding: 0 10px;
-  width: 155px;
-  border-radius: 20px;
-  appearance: none;
 }
 th,
 td {
