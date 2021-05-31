@@ -1,6 +1,6 @@
-const { ipcRenderer, TouchBarPopover } = require("electron");
+const { ipcRenderer } = require("electron");
 const puppeteer = require("puppeteer");
-const shell = require("electron").shell;
+// const shell = require("electron").shell;
 const Store = require("electron-store");
 const fs = require("fs");
 
@@ -73,6 +73,8 @@ function openModal(msg) {
   if (msg) {
     msg = String(msg);
     if (msg.includes("Error")) {
+      // if (true) {
+      toggleCancel = false;
       document.getElementById("modal").querySelector(".cont").innerText =
         "문제가 발생했습니다🤦‍♂️\n프로그램을 다시시작해주세요😥\n" + msg;
     } else {
@@ -85,70 +87,92 @@ function openModal(msg) {
 }
 
 async function parsing(page) {
+  console.log("parsing start");
   let info = await page.evaluate(() => {
-    const source = document.querySelector("title")
+    let source = document.querySelector("title")
       ? document.querySelector("title").innerText
       : "";
-    // const auctionTitle = document
+    // let auctionTitle = document
     //   .querySelector(".header-cont > div > p > span")
     //   .innerText.split(" -")[0];
-    const auctionTitle = document.querySelector(
+    let auctionTitle = document.querySelector(
       ".header-cont > p > span"
     )?.innerText;
-    const transactDate = document
+    let transactDate = document
       .querySelector(".header-cont > div > p > span")
       ?.innerText.split(" ")
       .slice(0, 3)
       .join(" ");
-    const number = document.querySelector(".lot-num")?.innerText;
-    const artistBirth = document.querySelector(".writer").innerText;
-    const artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
-    const birth = artistBirth.includes("(b.")
-      ? artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "")
-      : "";
-    const title = document.querySelector(".sub-tit")?.innerText;
-    const materialEdition = document
+    let number = document
+      .querySelector(".lot-num")
+      ?.innerText.replace(/[^0-9]/g, "");
+    let artistBirth = document.querySelector(".writer").innerText;
+    let artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
+    // let birth = artistBirth?.includes("(b.")
+    //   ? artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "")
+    //   : "";
+    let title = document.querySelector(".sub-tit")?.innerText;
+    let materialEdition = document
       .querySelector(".material > p:nth-child(1)")
       ?.innerText.replace(/\s/gi, "");
 
-    const material = materialEdition?.split("(edition")[0];
-    const edition = materialEdition.includes("edition")
+    let material = materialEdition?.split("(edition")[0];
+    let edition = materialEdition?.includes("edition")
       ? "(edition" + materialEdition?.split("(edition")[1]
       : "";
-    const sizeYear = document
+    let sizeYear = document
       .querySelector(".material > p:nth-child(2)")
       ?.innerText.replace(/\s/gi, "");
-    const size = sizeYear?.split("|")[0];
-    const year = sizeYear?.split("|")[1];
-    const wbPrice = document.querySelector(".wb-price > p:nth-child(1)");
-    const winningBidUnit = wbPrice ? wbPrice.replace(/[^A-Z]/g, "") : "";
-    const winningBid = wbPrice ? wbPrice.replace(/[A-Z]/g, "") : "";
-    const estimate = document
+    let size = sizeYear?.split("|")[0];
+    let year = sizeYear?.split("|")[1] ? sizeYear?.split("|")[1] : "";
+    let wbPrice = document.querySelector(".wb-price > p:nth-child(1)");
+    let winningBidUnit = wbPrice ? wbPrice.replace(/[^A-Z]/g, "") : "";
+    let winningBid = wbPrice ? wbPrice.replace(/[A-Z]/g, "") : "";
+    let estimate = document
       .querySelector(".es-price > p:nth-child(1)")
       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-    const estimateUnit = estimate?.replace(/[^A-Z]/g, "");
-    const estimateMin = estimate?.replace(/[A-Z]/g, "").split("~")[0];
-    const estimateMax = estimate?.replace(/[A-Z]/g, "").split("~")[1];
-    const stPrice = document
+    let estimateUnit = estimate?.replace(/[^A-Z]/g, "");
+    let estimateMin = estimate?.replace(/[A-Z]/g, "").split("~")[0];
+    let estimateMax = estimate?.replace(/[A-Z]/g, "").split("~")[1];
+    let stPrice = document
       .querySelector(".es-price > p:nth-child(2)")
       ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-    const signPosition = document
+    let signPosition = document
       .querySelector(".cont")
       ?.innerText.split("\n")
       .filter((item) => item.includes("signed"))
       .join("\n");
-    const sizeEdition = size + " " + edition;
+    let sizeEdition = size + " " + edition;
 
-    const artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
-    const artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+    let artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+    let artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
 
-    const titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
-    const titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+    let titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+    let titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
 
-    const materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
-    const materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+    let materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+    let materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
 
-    const certi = "";
+    let certi = "";
+    number == undefined ? "" : number;
+    artistKr == undefined ? "" : artistKr;
+    artistEn == undefined ? "" : artistEn;
+    titleKr == undefined ? "" : titleKr;
+    titleEn == undefined ? "" : titleEn;
+    year == undefined ? "" : year;
+    certi == undefined ? "" : certi;
+    sizeEdition == undefined ? "" : sizeEdition;
+    materialKr == undefined ? "" : materialKr;
+    materialEn == undefined ? "" : materialEn;
+    signPosition == undefined ? "" : signPosition;
+    source == undefined ? "" : source;
+    auctionTitle == undefined ? "" : auctionTitle;
+    transactDate == undefined ? "" : transactDate;
+    winningBidUnit == undefined ? "" : winningBidUnit;
+    winningBid == undefined ? "" : winningBid;
+    estimateUnit == undefined ? "" : estimateUnit;
+    estimateMin == undefined ? "" : estimateMin;
+    estimateMax == undefined ? "" : estimateMax;
     return {
       number,
       artistKr,
@@ -171,6 +195,7 @@ async function parsing(page) {
       estimateMax,
     };
   });
+  console.log(info);
   return info;
 }
 
@@ -215,68 +240,81 @@ async function scraper(url) {
   //init variables
   let res = [];
 
-  try {
-    while (toggleCancel) {
-      //ready for browser
-      const browser = await configureBrowser();
-      const page = await browser.newPage();
-      //access the website
-      await page.goto(url, { waitUntil: "domcontentloaded" });
+  while (toggleCancel) {
+    //ready for browser
+    const browser = await configureBrowser();
+    const page = await browser.newPage();
+    //access the website
+    await page.goto(url, { waitUntil: "domcontentloaded" });
 
-      //access the current premium auction
-      await page.hover(".top_nav");
+    //access the current premium auction
+    const auction = document.getElementById("select_auction").value;
+    await page.hover(".top_nav");
+    console.log("auction : ", auction);
+    if (auction == "premium") {
       await page.click(".top_nav .Premium-on > a");
-      await page.waitForSelector(".paginate_button.active", { timeout: 9000 });
-
-      //DEPTH-1 : pagination
-      let pageIndex = 1;
-      while (toggleCancel) {
-        pageIndex++;
-        let paginateButton = await page.$$(".paginate_button.page-item > a");
-        let bool_isNextButtonDisabled = await page.$eval(
-          ".paginate_button.active",
-          (el) => {
-            return el.nextElementSibling.classList.contains("disabled");
-          }
-        );
-        //check if paginate button is disabled
-        console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
-        if (bool_isNextButtonDisabled) break;
-        //access to new paginate page
-        paginateButton[pageIndex].click();
-        await page.waitForTimeout(1000);
-        await page.waitForSelector(".artwork > a", { timeout: 9000 });
-
-        //DEPTH-2 : artworks
-        let artworkIndex = 0;
-        while (toggleCancel) {
-          let artworkList = await page.$$(".artwork > a");
-          //check if artwork exists
-          if (artworkList[artworkIndex] == undefined) break;
-          //access to new artwork page
-          artworkList[artworkIndex].click();
-          await page.waitForTimeout(500);
-          await page.waitForSelector("#work", { timeout: 9000 });
-          //parsing
-          let info = await parsing(page);
-          console.log(info);
-          res.push(info);
-          //displaying
-          await display_table([info]);
-          //go again
-          await page.goBack();
-          console.log("artwork " + artworkIndex + " has completed.");
-          await page.waitForTimeout(500);
-          artworkIndex++;
-        }
-        console.log("Page " + (pageIndex - 1) + " has completed.");
-      }
-      console.log("All artworks has parsed and scraped.");
-      await browser.close();
-      return res;
+    } else if (auction == "weekly") {
+      await page.click(".top_nav .Weekly-on > a");
+    } else {
+      openModal("불러올 옥션을 선택할 때 문제가 발생했습니다.");
     }
-  } catch (e) {
-    openModal(e);
+
+    //DEPTH-1 : pagination
+    let pageIndex = 2;
+    while (toggleCancel) {
+      await page.waitForTimeout(500);
+      await page.waitForSelector(".paginate_button.active", { timeout: 9000 });
+      let paginateButton = await page.$$(".paginate_button.page-item > a");
+      let bool_isNextButtonDisabled = await page.$eval(
+        ".paginate_button.active",
+        (el) => {
+          return el.nextElementSibling.classList.contains("disabled");
+        }
+      );
+      //check if paginate button is disabled
+      console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
+      if (bool_isNextButtonDisabled) break;
+      if (pageIndex > 12) pageIndex = 2;
+      //access to new paginate page
+      let textContent = await paginateButton[pageIndex].getProperty(
+        "textContent"
+      );
+      let className = await paginateButton[pageIndex].getProperty("className");
+      console.log(textContent);
+      console.log(className);
+
+      paginateButton[pageIndex].click();
+      await page.waitForTimeout(1000);
+      await page.waitForSelector(".artwork > a", { timeout: 9000 });
+
+      //DEPTH-2 : artworks
+      let artworkIndex = 0;
+      while (toggleCancel) {
+        let artworkList = await page.$$(".artwork > a");
+        //check if artwork exists
+        if (artworkList[artworkIndex] == undefined) break;
+        //access to new artwork page
+        artworkList[artworkIndex].click();
+        await page.waitForTimeout(500);
+        await page.waitForSelector("#work", { timeout: 9000 });
+        //parsing
+        let info = await parsing(page);
+        console.log(info);
+        res.push(info);
+        //displaying
+        await display_table([info]);
+        //go again
+        await page.goBack();
+        console.log("artwork " + (artworkIndex + 1) + " has completed.");
+        await page.waitForTimeout(500);
+        artworkIndex++;
+      }
+      console.log("Page " + (pageIndex - 1) + " has completed.");
+      pageIndex++;
+    }
+    console.log("All artworks has parsed and scraped.");
+    await browser.close();
+    return res;
   }
 }
 function onSubmit(el) {
@@ -293,11 +331,11 @@ function onSubmit(el) {
         console.log(res);
         let resp = String(ipcRenderer.sendSync("create_xlsx", res, dirName));
         console.log(resp);
-        if (resp && !resp.includes("Error")) {
+        if (resp == "" || resp == undefined || resp.includes("Error")) {
+          openModal("파일생성에 실패했습니다👀\n" + resp);
+        } else {
           fileName = resp;
           openModal('파일이 생성되었습니다😊👍\n"' + resp + '.xlsx"');
-        } else {
-          openModal("파일생성에 실패했습니다👀\n" + resp);
         }
       })
       .catch((error) => {

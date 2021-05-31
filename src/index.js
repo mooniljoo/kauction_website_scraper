@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const Store = require("electron-store");
 const jsonToXlsx = require("./utils/sheetJs");
@@ -86,15 +86,23 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
         res
       );
       console.log("XLSX has created.");
+      dialog.showMessageBox(null, {
+        message: "성공",
+        detail: fileName + "생성에 성공했습니다",
+      });
       event.returnValue = fileName;
     }
   } catch (e) {
     console.error(e);
+    dialog.showErrorBox(
+      "문제가 발생했습니다🤦‍♂️\n프로그램을 다시시작해주세요😥\n" + e
+    );
     event.returnValue = e;
   }
 });
 
-ipcMain.on("display_error", (event, arg) => {
-  console.log(arg);
+ipcMain.on("display_error", (event, msg) => {
+  console.error(msg);
+  dialog.showErrorBox("알 수 없는 문제가 발생했습니다.\n" + msg);
   event.returnValue = "error displayed";
 });
