@@ -9,7 +9,7 @@ body,
 }
 body,
 input {
-  font-size: 15px;
+  font-size: 13px;
   font-family: "Apple SD Gothic Neo", arial, sans-serif;
 }
 .dimm {
@@ -521,11 +521,6 @@ tr:nth-child(2n) {
   }
   .modal {
     background-color: #111;
-  }
-}
-@media (max-width: 1650px) {
-  body {
-    font-size: 14px;
   }
 }
 @media (max-width: 1540px) {
