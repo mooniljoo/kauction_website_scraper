@@ -77,12 +77,14 @@ function openModal(msg) {
       toggleCancel = false;
       document.getElementById("modal").querySelector(".cont").innerText =
         "문제가 발생했습니다🤦‍♂️\n프로그램을 다시시작해주세요😥\n" + msg;
+      ipcRenderer.sendSync("display_error", msg);
     } else {
       document.getElementById("modal").querySelector(".cont").innerText = msg;
     }
   } else {
     document.getElementById("modal").querySelector(".cont").innerText =
       "알 수 없는 문제가 발생했습니다.\n" + msg;
+    ipcRenderer.sendSync("display_error", msg);
   }
 }
 
@@ -106,15 +108,14 @@ async function parsing(page) {
     let number = document
       .querySelector(".lot-num")
       ?.innerText.replace(/[^0-9]/g, "");
-    let artistBirth = document.querySelector(".writer").innerText;
-    let artist = artistBirth?.replace(/\s/gi, "").split("(b.")[0];
-    // let birth = artistBirth?.includes("(b.")
-    //   ? artistBirth?.split("(b.")[1].replace(/[^0-9]/g, "")
-    //   : "";
+    let artist = document
+      .querySelector(".writer")
+      ?.innerHTML.split("<span>")[0]
+      .trim();
     let title = document.querySelector(".sub-tit")?.innerText;
     let materialEdition = document
       .querySelector(".material > p:nth-child(1)")
-      ?.innerText.replace(/\s/gi, "");
+      ?.innerText.trim();
 
     let material = materialEdition?.split("(edition")[0];
     let edition = materialEdition?.includes("edition")
@@ -248,15 +249,23 @@ async function scraper(url) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
 
     //access the current premium auction
-    const auction = document.getElementById("select_auction").value;
+    const str_auction = document.getElementById("select_auction").value;
     await page.hover(".top_nav");
-    console.log("auction : ", auction);
-    if (auction == "premium") {
-      await page.click(".top_nav .Premium-on > a");
-    } else if (auction == "weekly") {
-      await page.click(".top_nav .Weekly-on > a");
+    console.log("auction : ", str_auction);
+    let auction;
+    if (str_auction == "premium") {
+      auction = await page.$(".top_nav .Premium-on > a");
+    } else if (str_auction == "weekly") {
+      auction = await page.$(".top_nav .Weekly-on > a");
     } else {
       openModal("불러올 옥션을 선택할 때 문제가 발생했습니다.");
+    }
+    console.log(auction);
+    if (auction == null) {
+      openModal("경매가 열리지 않았습니다.");
+      break;
+    } else {
+      await auction.click();
     }
 
     //DEPTH-1 : pagination

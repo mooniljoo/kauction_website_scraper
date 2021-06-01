@@ -3,6 +3,45 @@ const path = require("path");
 const Store = require("electron-store");
 const jsonToXlsx = require("./utils/sheetJs");
 
+const renameKey = (object, key, newKey) => {
+  const clonedObj = clone(object);
+
+  const targetKey = clonedObj[key];
+
+  delete clonedObj[key];
+
+  clonedObj[newKey] = targetKey;
+
+  return clonedObj;
+};
+const clone = (obj) => Object.assign({}, obj);
+function renameObj(obj) {
+  let temp = [];
+  obj.map((arr) => {
+    let res = {};
+    res = renameKey(arr, "number", "No.");
+    res = renameKey(res, "artistKr", "작가명(국문)");
+    res = renameKey(res, "artistEn", "작가명(영문)");
+    res = renameKey(res, "titleKr", "작품명(국문)");
+    res = renameKey(res, "titleEn", "작품명(영문)");
+    res = renameKey(res, "year", "제작년도");
+    res = renameKey(res, "certi", "인증 및 감정서");
+    res = renameKey(res, "sizeEdition", "작품규격");
+    res = renameKey(res, "materialKr", "재료 및 기법(국문)");
+    res = renameKey(res, "materialEn", "재료 및 기법(영문)");
+    res = renameKey(res, "signPosition", "사인위치");
+    res = renameKey(res, "source", "출품처");
+    res = renameKey(res, "auctionTitle", "경매명");
+    res = renameKey(res, "transactDate", "거래일");
+    res = renameKey(res, "winningBidUnit", "낙찰가격(단위)");
+    res = renameKey(res, "winningBid", "낙찰가격");
+    res = renameKey(res, "estimateUnit", "추정가격(단위)");
+    res = renameKey(res, "estimateMin", "추정가격(min)");
+    res = renameKey(res, "estimateMax", "추정가격(max)");
+    temp.push(res);
+  });
+  return temp;
+}
 Store.initRenderer();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -79,16 +118,18 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
       let auctionTitle = res[0].auctionTitle.split(" ")[0];
       let fileName = source + "_" + date + "_" + auctionTitle;
       console.log("fileName", fileName);
+
+      let obj = renameObj(res);
       fileName = jsonToXlsx.write(
         dirName, //dirName
         fileName, //fileName
         date + "_" + auctionTitle, //sheetName
-        res
+        obj
       );
       console.log("XLSX has created.");
       dialog.showMessageBox(null, {
         message: "성공",
-        detail: fileName + "생성에 성공했습니다",
+        detail: fileName + ".xlsx 생성에 성공했습니다",
       });
       event.returnValue = fileName;
     }

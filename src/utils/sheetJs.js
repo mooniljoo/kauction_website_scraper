@@ -3,19 +3,6 @@
 const xlsx = require("xlsx");
 const fs = require("fs");
 
-const renameKey = (object, key, newKey) => {
-  const clonedObj = clone(object);
-
-  const targetKey = clonedObj[key];
-
-  delete clonedObj[key];
-
-  clonedObj[newKey] = targetKey;
-
-  return clonedObj;
-};
-const clone = (obj) => Object.assign({}, obj);
-
 if (process.argv[2]) readXLSX(process.argv[2]);
 
 function readXLSX(filename) {
@@ -23,6 +10,7 @@ function readXLSX(filename) {
 }
 
 function writeXLSX(dirname, filename, sheetname, obj, order) {
+
   if (!dirname) dirname = "";
   if (process.env.debug) console.log(arguments);
 
@@ -36,33 +24,6 @@ function writeXLSX(dirname, filename, sheetname, obj, order) {
     filename = processData();
     return filename;
   }
-
-  let temp = [];
-  obj.map((arr) => {
-    let res = {};
-    res = renameKey(arr, "number", "No.");
-    res = renameKey(arr, "artistKr", "작가명(국문)");
-    res = renameKey(arr, "artistEn", "작가명(영문)");
-    res = renameKey(arr, "titleKr", "작품명(국문)");
-    res = renameKey(arr, "titleEn", "작품명(영문)");
-    res = renameKey(arr, "year", "제작년도");
-    res = renameKey(arr, "certi", "인증 및 감정서");
-    res = renameKey(arr, "materialKr", "재료 및 기법(국문)");
-    res = renameKey(arr, "materialEn", "재료 및 기법(영문)");
-    res = renameKey(arr, "signPosition", "사인위치");
-    res = renameKey(arr, "source", "출품처");
-    res = renameKey(arr, "auctionTitle", "경매명");
-    res = renameKey(arr, "transactDate", "거래일");
-    res = renameKey(arr, "winningBidUnit", "낙찰가격(단위)");
-    res = renameKey(arr, "winningBid", "낙찰가격");
-    res = renameKey(arr, "estimateUnit", "추정가격(단위)");
-    res = renameKey(arr, "estimateMin", "추정가격(min)");
-    res = renameKey(arr, "estimateMax", "추정가격(max)");
-    temp.push(res);
-  });
-
-  obj = temp;
-  console.log(obj);
 
   function processData() {
     try {
