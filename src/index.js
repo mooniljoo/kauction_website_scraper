@@ -99,13 +99,14 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.on("create_xlsx", (event, res, dirName) => {
-  // console.log(res);
+ipcMain.on("createXlsxFile", (event, res, dirName) => {
+  console.log(res);
   try {
     if (!res) {
       return false;
     } else {
       let source = res[0].source;
+      console.log(res[0].transactDate);
       let transactDate = res[0].transactDate
         .replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "")
         .split(" ");
@@ -115,7 +116,7 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
       let day = transactDate[2];
       let date = year + mon + day;
       // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
-      let auctionTitle = res[0].auctionTitle.split(" ")[0];
+      let auctionTitle = res[0].auctionTitle;
       let fileName = source + "_" + date + "_" + auctionTitle;
       console.log("fileName", fileName);
 
@@ -127,10 +128,6 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
         obj
       );
       console.log("XLSX has created.");
-      dialog.showMessageBox(null, {
-        message: "성공",
-        detail: fileName + ".xlsx 생성에 성공했습니다",
-      });
       event.returnValue = fileName;
     }
   } catch (e) {
@@ -141,9 +138,24 @@ ipcMain.on("create_xlsx", (event, res, dirName) => {
     event.returnValue = e;
   }
 });
+ipcMain.on("openDialogFile", (event, path) => {
+  dialog
+    .showOpenDialog(null, {
+      defaultPath: path,
+      properties: ["openDirectory"],
+    })
+    .then((res) => (event.returnValue = res));
+});
+ipcMain.on("openDialogMsg", (event, msg) => {
+  console.log(msg);
+  dialog.showMessageBox(null, {
+    detail: msg,
+  });
+  event.returnValue = "";
+});
 
-ipcMain.on("display_error", (event, msg) => {
+ipcMain.on("openDialogError", (event, msg) => {
   console.error(msg);
-  dialog.showErrorBox("알 수 없는 문제가 발생했습니다.\n" + msg);
-  event.returnValue = "error displayed";
+  dialog.showErrorBox(msg);
+  event.returnValue = "";
 });

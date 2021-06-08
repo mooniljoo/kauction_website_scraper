@@ -18,7 +18,7 @@
       </header> -->
       <div class="container">
         <nav>
-          <p>
+          <!-- <p>
             <label for="input_dirName">폴더명:</label>
             <input
               id="input_dirName"
@@ -29,74 +29,92 @@
               required
               onkeypress="onPress()"
             />
-          </p>
-          <select
-            id="select_auction"
-            class="select"
-            title="정보를 가져올 옥션의 종류를 선택해주세요."
-          >
-            <option value="premium">프리미엄</option>
-            <option value="weekly">위클리</option>
-          </select>
-          <div
-            id="btnRunning"
-            class="btn btn_primary"
-            title="이 버튼을 눌러 실행하세요."
-            onclick="onSubmit(this)"
-          >
-            실행
+          </p> -->
+          <div id="wrapper_checkbox" class="wrapper_checkbox">
+            <p class="col">
+              <input id="chk_major" type="checkbox" value="major" checked />
+              <label for="chk_major">메이저</label>
+            </p>
+            <p class="col">
+              <input id="chk_premium" type="checkbox" value="premium" checked />
+              <label for="chk_premium">프리미엄</label>
+            </p>
+            <p class="col">
+              <input id="chk_weekly" type="checkbox" value="weekly" checked />
+              <label for="chk_weekly">위클리</label>
+            </p>
           </div>
-          <!-- <div class="btn btn_info" onclick="openFolder(this)">폴더열기</div>
-          <div
-            id="btnOpenfile"
-            class="btn btn_info disabled"
-            onclick="openFile(this)"
-          >
-            최근파일열기
-          </div> -->
-          <div
-            id="btnCancel"
-            class="btn btn_danger disabled"
-            onclick="cancel(this)"
-          >
-            실행취소
-          </div>
-          <!-- <div class="btn btn_primary" onclick="toggleCancel()">CANCEL</div> -->
-
-          <div class="state">
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-            <div class="stick"></div>
-
-            <b>불러오는 중입니다...</b>
+          <div>
+            <div
+              id="btnRunning"
+              class="btn btn_primary"
+              title="버튼을 누르면 실행됩니다"
+              onclick="onRunning(this)"
+            >
+              실행
+            </div>
+            <div
+              id="btnCancel"
+              class="btn btn_danger disabled"
+              title="버튼을 누르면 실행이 취소됩니다"
+              onclick="onCancel(this)"
+            >
+              실행취소
+            </div>
+            <div
+              id="btnSelectDirPath"
+              class="btn btn_info"
+              onclick="openDialogFile(this)"
+              title="버튼을 눌러 파일이 저장될 폴더를 선택합니다"
+            >
+              폴더 선택
+            </div>
+            <div
+              id="btnOpenDir"
+              class="btn btn_info"
+              onclick="openDir(this)"
+              title="버튼을 눌러 파일이 저장될 폴더를 봅니다"
+            >
+              폴더 열기
+            </div>
+            <input id="input_dirPath" type="text" value="" disabled />
           </div>
         </nav>
+
+        <div class="state">
+          <strong id="stateMsg">불러오는 중입니다...</strong>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+          <div class="stick"></div>
+        </div>
         <main>
           <table>
             <thead>
               <tr>
                 <th>No.</th>
-                <th>작가명(국문)</th>
-                <th>작가명(영문)</th>
-                <th>작품명(국문)</th>
-                <th>작가명(영문)</th>
+                <th>작가명 (국문)</th>
+                <th>작가명 (영문)</th>
+                <th>작품명 (국문)</th>
+                <th>작가명 (영문)</th>
                 <th>제작년도</th>
                 <th>인증 및 감정서</th>
                 <th>작품규격</th>
-                <th>재료 및 기법(국문)</th>
-                <th>재료 및 기법(영문)</th>
+                <th>재료 및 기법 (국문)</th>
+                <th>재료 및 기법 (영문)</th>
                 <th>사인위치</th>
                 <th>출품처</th>
                 <th>경매명</th>
                 <th>거래일</th>
-                <th>낙찰가격(단위)</th>
+                <th>낙찰가격 (단위)</th>
                 <th>낙찰가격</th>
-                <th>추정가격(단위)</th>
-                <th>추정가격(min)</th>
-                <th>추정가격(max)</th>
+                <th>추정가격 (단위)</th>
+                <th>추정가격 (min)</th>
+                <th>추정가격 (max)</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
