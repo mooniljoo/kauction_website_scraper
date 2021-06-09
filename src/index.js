@@ -30,8 +30,8 @@ function renameObj(obj) {
     res = renameKey(res, "materialKr", "재료 및 기법(국문)");
     res = renameKey(res, "materialEn", "재료 및 기법(영문)");
     res = renameKey(res, "signPosition", "사인위치");
-    res = renameKey(res, "source", "출품처");
-    res = renameKey(res, "auctionTitle", "경매명");
+    res = renameKey(res, "auctionTitle", "출품처");
+    res = renameKey(res, "source", "경매명");
     res = renameKey(res, "transactDate", "거래일");
     res = renameKey(res, "winningBidUnit", "낙찰가격(단위)");
     res = renameKey(res, "winningBid", "낙찰가격");
@@ -105,6 +105,7 @@ ipcMain.on("createXlsxFile", (event, res, dirName) => {
     if (!res) {
       return false;
     } else {
+      let auctionTitle = res[0].auctionTitle;
       let source = res[0].source;
       console.log(res[0].transactDate);
       let transactDate = res[0].transactDate
@@ -116,15 +117,14 @@ ipcMain.on("createXlsxFile", (event, res, dirName) => {
       let day = transactDate[2];
       let date = year + mon + day;
       // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
-      let auctionTitle = res[0].auctionTitle;
-      let fileName = source + "_" + date + "_" + auctionTitle;
+      let fileName = auctionTitle + "_" + date + "_" + source;
       console.log("fileName", fileName);
 
       let obj = renameObj(res);
       fileName = jsonToXlsx.write(
         dirName, //dirName
         fileName, //fileName
-        date + "_" + auctionTitle, //sheetName
+        date + "_" + source, //sheetName
         obj
       );
       console.log("XLSX has created.");
