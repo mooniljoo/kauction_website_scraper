@@ -170,6 +170,8 @@ async function scraper(url) {
         await page.waitForTimeout(1000);
 
         let outerDesc;
+        let winningBid = "";
+        let winningBidUnit = "";
         //scraping winningBid
         const elem_winningBid = await page.$(
           "#list ul:nth-child(4) > li.list-inline-item:nth-child(2)"
@@ -178,8 +180,10 @@ async function scraper(url) {
           let winningBid = await elem_winningBid.evaluate((el) => el.innerText);
           let winningBidUnit = winningBid?.replace(/[^A-Z]/g, "");
           winningBid = winningBid?.replace(/[A-Z]/g, "");
-          outerDesc = { winningBid, winningBidUnit };
+          winningBid = winningBid == undefined ? "" : winningBid;
+          winningBidUnit = winningBidUnit == undefined ? "" : winningBidUnit;
         }
+        outerDesc = { winningBid, winningBidUnit };
 
         ///// ready for next page
         await page.waitForTimeout(500);
@@ -196,9 +200,9 @@ async function scraper(url) {
         //check if paginate button is disabled
         console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
         if (bool_isNextButtonDisabled) break;
-        if (pageIndex > 12) pageIndex = 2;
-
         paginateButton[pageIndex].click();
+        if (pageIndex == paginateButton.length - 2) pageIndex = 2;
+
         //DEPTH 3 : artwork
         let artworkIndex = 0;
         let artworkCount = 0;
