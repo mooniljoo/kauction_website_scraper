@@ -166,25 +166,6 @@ async function scraper(url) {
       let pageIndex = 2;
       let pageCount = 0;
       while (boolRunning) {
-        // parsing outer description of artwork
-        await page.waitForTimeout(1000);
-
-        let outerDesc;
-        let winningBid = "";
-        let winningBidUnit = "";
-        //scraping winningBid
-        const elem_winningBid = await page.$(
-          "#list ul:nth-child(4) > li.list-inline-item:nth-child(2)"
-        );
-        if (elem_winningBid != null) {
-          let winningBid = await elem_winningBid.evaluate((el) => el.innerText);
-          let winningBidUnit = winningBid?.replace(/[^A-Z]/g, "");
-          winningBid = winningBid?.replace(/[A-Z]/g, "");
-          winningBid = winningBid == undefined ? "" : winningBid;
-          winningBidUnit = winningBidUnit == undefined ? "" : winningBidUnit;
-        }
-        outerDesc = { winningBid, winningBidUnit };
-
         ///// ready for next page
         await page.waitForTimeout(500);
         await page.waitForSelector(".paginate_button.active", {
@@ -213,6 +194,25 @@ async function scraper(url) {
           artworkCount = arrArtwork.length;
           //check if artwork exists
           if (arrArtwork[artworkIndex] == undefined) break;
+
+          let outerDesc;
+          //scraping winningBid
+          const elem_winningBid = await page.$(
+            "#list > div:nth-child(" +
+              (artworkIndex + 1) +
+              ") ul:nth-child(4) > li.list-inline-item:nth-child(2)"
+          );
+          if (elem_winningBid != null) {
+            let winningBid = await elem_winningBid.evaluate((el) => {
+              return el.innerText;
+            });
+            let winningBidUnit = winningBid?.replace(/[^A-Z]/g, "").trim();
+            winningBid = winningBid?.replace(/[A-Z]/g, "").trim();
+            winningBid = winningBid == undefined ? "" : winningBid;
+            winningBidUnit = winningBidUnit == undefined ? "" : winningBidUnit;
+            outerDesc = { winningBid, winningBidUnit };
+          }
+
           //access to new artwork page
           arrArtwork[artworkIndex].click();
 
