@@ -99,7 +99,7 @@ app.on("activate", () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
-ipcMain.on("createXlsxFile", (event, res, dirName) => {
+ipcMain.on("createXlsxFile", (event, res, dirName, auctionCategory) => {
   console.log(res);
   try {
     if (!res) {
@@ -114,17 +114,18 @@ ipcMain.on("createXlsxFile", (event, res, dirName) => {
       let year = transactDate[0].substr(2);
       let mon =
         transactDate[1].length == 1 ? "0" + transactDate[1] : transactDate[1];
-      let day = transactDate[2];
+      let day = transactDate[2].replace(/[^0-9]/g, "");
+      day = day.length == 1 ? "0" + day : day;
       let date = year + mon + day;
       // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
-      let fileName = auctionTitle + "_" + date + "_" + source;
+      let fileName = auctionTitle + "_" + date + "_" + auctionCategory;
       console.log("fileName", fileName);
 
       let obj = renameObj(res);
       fileName = jsonToXlsx.write(
         dirName, //dirName
         fileName, //fileName
-        date + "_" + source, //sheetName
+        date + "_" + auctionTitle, //sheetName
         obj
       );
       console.log("XLSX has created.");

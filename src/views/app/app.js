@@ -161,10 +161,28 @@ async function scraper(url) {
       let auctionResult = [];
       // acess the auction
       console.log("ELEMENT TO ACCESS AUCTION CLICK!");
-      button_auction.click();
+      await button_auction.click();
       //DEPTH 2 : pagination
       let pageIndex = 2;
       let pageCount = 0;
+
+      //get title
+      console.log("TRY TO GET auctionTitle");
+      const elem_title = await page.waitForSelector(".subtop-desc", {
+        timeout: 30000,
+      });
+      let source = await elem_title.evaluate((html) => {
+        return html.querySelector("h1")?.innerText;
+      });
+      let transactDate = await elem_title.evaluate((html) => {
+        return html
+          .querySelector(".subtop-desc > p")
+          ?.innerText.split(" ")
+          .slice(0, 3)
+          .join(" ");
+      });
+      console.log(source, transactDate);
+
       while (boolRunning) {
         ///// ready for next page
         await page.waitForTimeout(500);
@@ -196,6 +214,8 @@ async function scraper(url) {
           if (arrArtwork[artworkIndex] == undefined) break;
 
           let outerDesc;
+          let winningBid = "";
+          let winningBidUnit = "";
           //scraping winningBid
           const elem_winningBid = await page.$(
             "#list > div:nth-child(" +
@@ -203,15 +223,15 @@ async function scraper(url) {
               ") ul:nth-child(4) > li.list-inline-item:nth-child(2)"
           );
           if (elem_winningBid != null) {
-            let winningBid = await elem_winningBid.evaluate((el) => {
+            winningBid = await elem_winningBid.evaluate((el) => {
               return el.innerText;
             });
-            let winningBidUnit = winningBid?.replace(/[^A-Z]/g, "").trim();
+            winningBidUnit = winningBid?.replace(/[^A-Z]/g, "").trim();
             winningBid = winningBid?.replace(/[A-Z]/g, "").trim();
             winningBid = winningBid == undefined ? "" : winningBid;
             winningBidUnit = winningBidUnit == undefined ? "" : winningBidUnit;
-            outerDesc = { winningBid, winningBidUnit };
           }
+          outerDesc = { winningBid, winningBidUnit };
 
           //access to new artwork page
           arrArtwork[artworkIndex].click();
@@ -220,7 +240,7 @@ async function scraper(url) {
           await page.waitForTimeout(500);
           await page.waitForSelector("#work", { timeout: 9000 });
           let innerDesc = await parsing(page);
-          description = { ...outerDesc, ...innerDesc };
+          description = { source, transactDate, ...outerDesc, ...innerDesc };
           console.log(
             `(${artworkIndex + 1}/${artworkCount}) ${description.number}|${
               description.artistKr || description.artistEn
@@ -247,7 +267,12 @@ async function scraper(url) {
       if (auctionResult.length != 0) {
         // send to Main Process
         let resp = String(
-          ipcRenderer.sendSync("createXlsxFile", auctionResult, dirPath)
+          ipcRenderer.sendSync(
+            "createXlsxFile",
+            auctionResult,
+            dirPath,
+            arrAuction[auctionIndex]
+          )
         );
         // resc to Main Process
         if (!resp.includes("Error")) {
@@ -385,12 +410,6 @@ async function parsing(page) {
       let auctionTitle = document.querySelector("title")
         ? document.querySelector("title").innerText
         : "";
-      let source = document.querySelector(".header-cont > p > span")?.innerText;
-      let transactDate = document
-        .querySelector(".header-cont > div > p > span")
-        ?.innerText.split(" ")
-        .slice(0, 3)
-        .join(" ");
       let number = document
         .querySelector(".lot-num")
         ?.innerText.replace(/[^0-9]/g, "");
@@ -412,18 +431,12 @@ async function parsing(page) {
         ?.innerText.replace(/\s/gi, "");
       let size = sizeYear?.split("|")[0];
       let year = sizeYear?.split("|")[1] ? sizeYear?.split("|")[1] : "";
-      let wbPrice = document.querySelector(".wb-price > p:nth-child(1)");
-      let winningBidUnit = wbPrice ? wbPrice.replace(/[^A-Z]/g, "") : "";
-      let winningBid = wbPrice ? wbPrice.replace(/[A-Z]/g, "") : "";
       let estimate = document
         .querySelector(".es-price > p:nth-child(1)")
         ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
       let estimateUnit = estimate?.replace(/[^A-Z]/g, "");
       let estimateMin = estimate?.replace(/[A-Z]/g, "").split("~")[0];
       let estimateMax = estimate?.replace(/[A-Z]/g, "").split("~")[1];
-      let stPrice = document
-        .querySelector(".es-price > p:nth-child(2)")
-        ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
       let signPosition = document
         .querySelector(".cont")
         ?.innerText.split("\n")
@@ -452,9 +465,7 @@ async function parsing(page) {
       materialKr = materialKr == undefined ? "" : materialKr;
       materialEn = materialEn == undefined ? "" : materialEn;
       signPosition = signPosition == undefined ? "" : signPosition;
-      source = source == undefined ? "" : source;
       auctionTitle = auctionTitle == undefined ? "" : auctionTitle;
-      transactDate = transactDate == undefined ? "" : transactDate;
       estimateUnit = estimateUnit == undefined ? "" : estimateUnit;
       estimateMin = estimateMin == undefined ? "" : estimateMin;
       estimateMax = estimateMax == undefined ? "" : estimateMax;
@@ -470,9 +481,7 @@ async function parsing(page) {
         materialKr,
         materialEn,
         signPosition,
-        source,
         auctionTitle,
-        transactDate,
         estimateUnit,
         estimateMin,
         estimateMax,
@@ -481,7 +490,7 @@ async function parsing(page) {
     console.log("description", desc);
     return desc;
   } catch (e) {
-    console.error("파싱중 오류가 발생헀습니다🤦‍♂️");
+    console.error("파싱중 오류가 발생헀습니다🤦‍♂️\n", e);
     return null;
   }
 }
