@@ -1,4 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  dialog,
+  Notification,
+} = require("electron");
 const path = require("path");
 const Store = require("electron-store");
 const jsonToXlsx = require("./utils/sheetJs");
@@ -52,7 +58,7 @@ if (require("electron-squirrel-startup")) {
 
 const createWindow = () => {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     minWidth: 1340,
     minHeight: 300,
     width: 1560,
@@ -68,8 +74,8 @@ const createWindow = () => {
   });
 
   // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, "/views/app/app.html"));
-  mainWindow.setMenuBarVisibility(false);
+  win.loadFile(path.join(__dirname, "/views/app/app.html"));
+  win.setMenuBarVisibility(false);
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 };
@@ -78,7 +84,11 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", createWindow);
-
+app.on("ready", () => {
+  if (process.platform !== "win32") {
+    app.setAppUserModelId(app.name);
+  }
+});
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
@@ -160,3 +170,17 @@ ipcMain.on("openDialogError", (event, msg) => {
   dialog.showErrorBox(msg);
   event.returnValue = "";
 });
+
+ipcMain.on("showNotification", (event, title, body) => {
+  console.log(body);
+  showNotification(title, body);
+  event.returnValue = "";
+});
+
+function showNotification(title, body) {
+  const notification = {
+    title: title,
+    body: body,
+  };
+  new Notification(notification).show();
+}

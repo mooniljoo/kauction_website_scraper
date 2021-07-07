@@ -9,7 +9,9 @@ document.addEventListener("DOMContentLoaded", (event) => {
   console.log("Scraper DOM fully loaded");
   document.getElementById("input_dirPath").value = rootPath;
 });
-
+function showNotification(title, msg) {
+  ipcRenderer.sendSync("showNotification", title, msg);
+}
 function openDialogMsg(msg) {
   ipcRenderer.sendSync("openDialogMsg", msg);
 }
@@ -17,7 +19,7 @@ function openDialogError(msg) {
   ipcRenderer.sendSync("openDialogError", msg);
 }
 function setLoading() {
-  document.getElementById("stateMsg").innerText = "불러오는 중입니다...";
+  setStateMsg("불러오는 중입니다...");
   document.querySelector(".state").classList.add("on");
   document.getElementById("btnRunning").classList.add("disabled");
   document.getElementById("btnSelectDirPath").classList.add("disabled");
@@ -53,11 +55,16 @@ function openDir(el) {
   shell.openExternal(dirPath);
 }
 
+function setStateMsg(msg) {
+  console.log(msg);
+  document.getElementById("stateMsg").innerText = msg;
+}
+
 function onCancel(el) {
   //check this element is disabled or not
   if (el.classList.contains("disabled")) return;
   // show msg to screen for user
-  document.getElementById("stateMsg").innerText = "취소중입니다...";
+  setStateMsg("취소중입니다...");
   boolRunning = false;
 }
 
@@ -74,7 +81,7 @@ function openDialogFile(el) {
 async function configureBrowser() {
   const browser = await puppeteer.launch({
     devtools: false,
-    headless: true,
+    headless: false,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
   });
@@ -104,6 +111,8 @@ async function scraper(url) {
   // set loading state
   setLoading();
   // init variables
+  const auction_id = "sophihlee94";
+  const auction_pw = "!Hj2hj2hj2";
   const arrAuction = getArrAuction();
   const arrClosedAuction = [];
   const arrOpenedAuction = [];
@@ -111,16 +120,55 @@ async function scraper(url) {
   const arrFailedAuctionsSaved = [];
   // check for auctions to scrape
   if (arrAuction == null) return false;
-  console.log(`"${arrAuction}" auctions ARE SELECTED.`);
+  setStateMsg(`"${arrAuction}" 경매를 선택하셨어요!👌`);
 
   // ready for browser
   const browser = await configureBrowser();
   const page = await browser.newPage();
   //access the website
+  setStateMsg("사이트에 접근합니다...⏱");
   await page.goto(url, { waitUntil: "domcontentloaded" });
 
+  setStateMsg("로그인을 시도합니다...⏱");
+  // click elem login
+  try {
+    const elem_login = await page.waitForSelector(
+      "div.header-util > a:nth-child(1)",
+      { timeout: 9000 }
+    );
+    await elem_login.click();
+
+    await page.waitForSelector("#modal-login-pwd", { timeout: 9000 });
+    await page.evaluate(
+      (id, pw) => {
+        document.querySelector("#modal-login-id").value = id;
+        document.querySelector("#modal-login-pwd").value = pw;
+      },
+      auction_id,
+      auction_pw
+    );
+
+    const button_login = await page.waitForSelector(
+      ".loginForm-wrap > button",
+      {
+        timeout: 9000,
+      }
+    );
+    await page.waitForTimeout(500);
+    console.log(button_login);
+    await button_login.click();
+    await page.waitForNavigation();
+    setStateMsg("로그인에 성공했습니다...👍");
+  } catch (e) {
+    console.error(e);
+    showNotification(
+      "로그인 실패🤷‍♂️",
+      "로그인이 필요하지 않은 정보들만 가져오겠습니다.😂"
+    );
+  }
+
   ///////////////// LOOPS /////////////////
-  console.log("BROWSER IS READY. LOOPS ARE ABOUT TO START!");
+  setStateMsg("브라우저가 준비되었습니다...⏱");
   //DEPTH 1 : auction
   let auctionIndex = 0;
   let auctionCount = arrAuction.length;
@@ -132,9 +180,7 @@ async function scraper(url) {
     await page.hover(".top_nav");
     await page.waitForTimeout(1000);
     // select the auction
-    console.log(
-      `TRY TO "${arrAuction[auctionIndex]} auction" SCRAPING. TRY TO GET ELEMENT FOR ACCESS AUCTION PAGE`
-    );
+    setStateMsg(`"${arrAuction[auctionIndex]} 경매의 상태를 확인합니다...⏱`);
     let selector_auction;
     if (arrAuction[auctionIndex] == "major") {
       selector_auction = ".top_nav .Major-on > a";
@@ -143,16 +189,15 @@ async function scraper(url) {
     } else if (arrAuction[auctionIndex] == "weekly") {
       selector_auction = ".top_nav .Weekly-on > a";
     } else {
-      console.error(
-        `웹사이트의 구조가 바뀌었거나 선택하여 불러오려고 하는 옥션의 설정값(${arrAuction[auctionIndex]})이 시스템에 저장되어 있지 않습니다.`
-      );
+      throw new Error(`Error: 웹사이트의 구조가 바뀌었습니다.`);
       break;
     }
 
     const button_auction = await page.$(selector_auction);
+    console.log(button_auction);
     if (button_auction == null) {
-      console.log(
-        `선택자가 페이지상에 존재하지 않는것으로 보아\n${arrAuction[auctionIndex]}경매가 아직 열리지 않았습니다.`
+      setStateMsg(
+        `아직 ${arrAuction[auctionIndex]}경매가 열리지 않아 다음 경매로 넘어갑니다😊`
       );
       arrClosedAuction.push(arrAuction[auctionIndex]);
     } else {
@@ -160,28 +205,38 @@ async function scraper(url) {
       //init auctionResult
       let auctionResult = [];
       // acess the auction
-      console.log("ELEMENT TO ACCESS AUCTION CLICK!");
+      setStateMsg(`${arrAuction[auctionIndex]} 경매에 접근합니다...⏱`);
+      await page.waitForTimeout(500);
       await button_auction.click();
       //DEPTH 2 : pagination
       let pageIndex = 2;
       let pageCount = 0;
 
       //get title
-      console.log("TRY TO GET auctionTitle");
-      const elem_title = await page.waitForSelector(".subtop-desc", {
-        timeout: 30000,
-      });
-      let source = await elem_title.evaluate((html) => {
-        return html.querySelector("h1")?.innerText;
-      });
-      let transactDate = await elem_title.evaluate((html) => {
-        return html
-          .querySelector(".subtop-desc > p")
-          ?.innerText.split(" ")
-          .slice(0, 3)
-          .join(" ");
-      });
-      console.log(source, transactDate);
+      let source;
+      let transactDate;
+      setStateMsg(`${arrAuction[auctionIndex]} 경매의 출품처를 확인합니다...⏱`);
+      try {
+        const elem_title = await page.waitForSelector(".subtop-desc", {
+          timeout: 30000,
+        });
+        source = await elem_title.evaluate((html) => {
+          return html.querySelector("h1")?.innerText;
+        });
+        transactDate = await elem_title.evaluate((html) => {
+          return html
+            .querySelector(".subtop-desc > p")
+            ?.innerText.split(" ")
+            .slice(0, 3)
+            .join(" ");
+        });
+      } catch (e) {
+        console.error(e);
+        showNotification(
+          `${arrAuction[auctionIndex]}경매 출품처 분석 실패🤷‍♂️`,
+          "출품처와 경매일을 제외한 정보를 불러오겠습니다😂"
+        );
+      }
 
       while (boolRunning) {
         ///// ready for next page
@@ -197,7 +252,6 @@ async function scraper(url) {
           }
         );
         //check if paginate button is disabled
-        console.log("bool_isNextButtonDisabled", bool_isNextButtonDisabled);
         if (bool_isNextButtonDisabled) break;
         paginateButton[pageIndex].click();
         if (pageIndex == paginateButton.length - 2) pageIndex = 2;
@@ -217,35 +271,60 @@ async function scraper(url) {
           let winningBid = "";
           let winningBidUnit = "";
           //scraping winningBid
-          const elem_winningBid = await page.$(
-            "#list > div:nth-child(" +
-              (artworkIndex + 1) +
-              ") ul:nth-child(4) > li.list-inline-item:nth-child(2)"
-          );
-          if (elem_winningBid != null) {
-            winningBid = await elem_winningBid.evaluate((el) => {
-              return el.innerText;
+          try {
+            winningBid = await page.evaluate(() => {
+              return document.querySelector(".list-inline-item > span")
+                .innerText;
             });
-            winningBidUnit = winningBid?.replace(/[^A-Z]/g, "").trim();
-            winningBid = winningBid?.replace(/[A-Z]/g, "").trim();
-            winningBid = winningBid == undefined ? "" : winningBid;
-            winningBidUnit = winningBidUnit == undefined ? "" : winningBidUnit;
+
+            // 낙찰가가 있으면
+            if (String(winningBid).includes("낙찰가")) {
+              setStateMsg(`낙찰가를 불러옵니다...⏱`);
+              winningBidUnit = winningBid?.replace(/[^A-Z]/g, "").trim();
+              winningBid = winningBid
+                ?.replace(/[^0-9]/g, "")
+                .trim()
+                .replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+              winningBid = winningBid == undefined ? "" : winningBid;
+              winningBidUnit =
+                winningBidUnit == undefined ? "" : winningBidUnit;
+            } else {
+              winningBid = "";
+            }
+          } catch (e) {
+            console.error(e);
+            showNotification(
+              `${arrAuction[auctionIndex]}경매 낙찰가 분석 실패🤷‍♂️`,
+              "낙찰가를 제외한 정보를 불러오겠습니다😂"
+            );
           }
+
           outerDesc = { winningBid, winningBidUnit };
 
           //access to new artwork page
+          setStateMsg(`상세페이지에 접근시도합니다...⏱`);
           arrArtwork[artworkIndex].click();
 
           // parsing inner description of artwork
-          await page.waitForTimeout(500);
-          await page.waitForSelector("#work", { timeout: 9000 });
-          let innerDesc = await parsing(page);
+          await page.waitForTimeout(1000);
+
+          setStateMsg(`구조를 분석합니다...⏱`);
+          let innerDesc;
+          try {
+            innerDesc = await parsing(page);
+            setStateMsg(`정보를 성공적으로 불러왔습니다...⏱`);
+          } catch (e) {
+            console.error(e);
+            showNotification(
+              `분석 실패🤷‍♂️`,
+              `(${artworkIndex + 1}/${artworkCount}) ${innerDesc.number}|${
+                innerDesc.artistKr || innerDesc.artistEn
+              }|${
+                innerDesc.titleKr || innerDesc.titleEn
+              }의 정보를 제외하고 불러오겠습니다😂`
+            );
+          }
           description = { source, transactDate, ...outerDesc, ...innerDesc };
-          console.log(
-            `(${artworkIndex + 1}/${artworkCount}) ${description.number}|${
-              description.artistKr || description.artistEn
-            }|${description.titleKr || description.titleEn} has completed.`
-          );
           auctionResult.push(description);
           // displaying description
           await drawTableforDesc([description]);
@@ -256,10 +335,9 @@ async function scraper(url) {
 
         pageIndex++;
       }
-      console.log(`${arrAuction[auctionIndex]}경매 파싱을 마쳤습니다.`);
-
-      console.log(
-        `${auctionResult.length}개의 작품이 ${arrAuction[auctionIndex]}경매에서 파싱되었습니다.`
+      setStateMsg(`${arrAuction[auctionIndex]}경매 파싱을 마쳤습니다😊`);
+      setStateMsg(
+        `${auctionResult.length}개의 작품을 ${arrAuction[auctionIndex]}경매에서 불러왔습니다😊`
       );
       // get directory path to save
       let dirPath = document.getElementById("input_dirPath").value;
@@ -278,16 +356,17 @@ async function scraper(url) {
         if (!resp.includes("Error")) {
           //success
           arrSuccessfulAuctionsSaved.push(resp);
+          setStateMsg("xlsx파일 생성 완료", `${resp}가 생성 되었습니다.`);
         } else {
           //fail
           arrFailedAuctionsSaved.push(resp);
         }
       }
     }
-    console.log(
+    setStateMsg(
       `(${auctionIndex + 1} / ${auctionCount}) "${
         arrAuction[auctionIndex]
-      } auction" has completed.`
+      } 경매 가져오기가 끝났습니다...😎`
     );
     auctionIndex++;
     // arrAuction.shift();
@@ -364,14 +443,26 @@ function onRunning(el) {
         } else if (res.arrOpenedAuction.length == 0) {
           msg = `\n열려있는 경매가 없습니다😊`;
         } else {
-          msg = `ERROR: scraper 결과를 분석할수 없습니다🤦‍♂ \n${res}`;
+          throw new Error(
+            `ERROR: scraper 결과를 분석할수 없습니다🤦‍♂ \n${res}`
+          );
         }
       }
       //report result for user
       openDialogMsg(msg);
+      showNotification("실행종료!", msg);
     })
-    .catch((err) => {
-      openDialogError(err);
+    .catch((e) => {
+      unsetLoading();
+      console.error(e);
+      if (e instanceof ReferenceError) {
+        showNotification("에러발생!🤦‍♂️", e);
+      } else if (String(e).includes("TimeoutError")) {
+        showNotification(
+          "에러발생!🤦‍♂️",
+          "페이지를 탐색하지 못했습니다. 사이트 디자인이나 구조가 변경되었을 수 있습니다.😥"
+        );
+      }
     });
 }
 
@@ -405,92 +496,86 @@ function drawTableforDesc(arr) {
 }
 
 async function parsing(page) {
-  try {
-    let desc = await page.evaluate(() => {
-      let auctionTitle = document.querySelector("title")
-        ? document.querySelector("title").innerText
-        : "";
-      let number = document
-        .querySelector(".lot-num")
-        ?.innerText.replace(/[^0-9]/g, "");
-      let artist = document
-        .querySelector(".writer")
-        ?.innerHTML.split("<span>")[0]
-        .trim();
-      let title = document.querySelector(".sub-tit")?.innerText;
-      let materialEdition = document
-        .querySelector(".material > p:nth-child(1)")
-        ?.innerText.trim();
+  let desc = await page.evaluate(() => {
+    let auctionTitle = document.querySelector("title")
+      ? document.querySelector("title").innerText
+      : "";
+    let number = document
+      .querySelector(".lot-num")
+      ?.innerText.replace(/[^0-9]/g, "");
+    let artist = document
+      .querySelector(".writer")
+      ?.innerHTML.split("<span>")[0]
+      .trim();
+    let title = document.querySelector(".sub-tit")?.innerText;
+    let materialEdition = document
+      .querySelector(".material > p:nth-child(1)")
+      ?.innerText.trim();
 
-      let material = materialEdition?.split("(edition")[0];
-      let edition = materialEdition?.includes("edition")
-        ? "(edition" + materialEdition?.split("(edition")[1]
-        : "";
-      let sizeYear = document
-        .querySelector(".material > p:nth-child(2)")
-        ?.innerText.replace(/\s/gi, "");
-      let size = sizeYear?.split("|")[0];
-      let year = sizeYear?.split("|")[1] ? sizeYear?.split("|")[1] : "";
-      let estimate = document
-        .querySelector(".es-price > p:nth-child(1)")
-        ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
-      let estimateUnit = estimate?.replace(/[^A-Z]/g, "");
-      let estimateMin = estimate?.replace(/[A-Z]/g, "").split("~")[0];
-      let estimateMax = estimate?.replace(/[A-Z]/g, "").split("~")[1];
-      let signPosition = document
-        .querySelector(".cont")
-        ?.innerText.split("\n")
-        .filter((item) => item.includes("signed"))
-        .join("\n");
-      let sizeEdition = size + " " + edition;
+    let material = materialEdition?.split("(edition")[0];
+    let edition = materialEdition?.includes("edition")
+      ? "(edition" + materialEdition?.split("(edition")[1]
+      : "";
+    let sizeYear = document
+      .querySelector(".material > p:nth-child(2)")
+      ?.innerText.replace(/\s/gi, "");
+    let size = sizeYear?.split("|")[0];
+    let year = sizeYear?.split("|")[1] ? sizeYear?.split("|")[1] : "";
+    let estimate = document
+      .querySelector(".es-price > p:nth-child(1)")
+      ?.innerText.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]/g, "");
+    let estimateUnit = estimate?.replace(/[^A-Z]/g, "");
+    let estimateMin = estimate?.replace(/[A-Z]/g, "").split("~")[0];
+    let estimateMax = estimate?.replace(/[A-Z]/g, "").split("~")[1];
+    let signPosition = document
+      .querySelector(".cont")
+      ?.innerText.split("\n")
+      .filter((item) => item.includes("signed"))
+      .join("\n");
+    let sizeEdition = size + " " + edition;
 
-      let artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
-      let artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+    let artistKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
+    let artistEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(artist) ? artist : "";
 
-      let titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
-      let titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+    let titleKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
+    let titleEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(title) ? title : "";
 
-      let materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
-      let materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+    let materialKr = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
+    let materialEn = !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(material) ? material : "";
 
-      let certi = "";
-      number = number == undefined ? "" : number;
-      artistKr = artistKr == undefined ? "" : artistKr;
-      artistEn = artistEn == undefined ? "" : artistEn;
-      titleKr = titleKr == undefined ? "" : titleKr;
-      titleEn = titleEn == undefined ? "" : titleEn;
-      year = year == undefined ? "" : year;
-      certi = certi == undefined ? "" : certi;
-      sizeEdition = sizeEdition == undefined ? "" : sizeEdition;
-      materialKr = materialKr == undefined ? "" : materialKr;
-      materialEn = materialEn == undefined ? "" : materialEn;
-      signPosition = signPosition == undefined ? "" : signPosition;
-      auctionTitle = auctionTitle == undefined ? "" : auctionTitle;
-      estimateUnit = estimateUnit == undefined ? "" : estimateUnit;
-      estimateMin = estimateMin == undefined ? "" : estimateMin;
-      estimateMax = estimateMax == undefined ? "" : estimateMax;
-      return {
-        number,
-        artistKr,
-        artistEn,
-        titleKr,
-        titleEn,
-        year,
-        certi,
-        sizeEdition,
-        materialKr,
-        materialEn,
-        signPosition,
-        auctionTitle,
-        estimateUnit,
-        estimateMin,
-        estimateMax,
-      };
-    });
-    console.log("description", desc);
-    return desc;
-  } catch (e) {
-    console.error("파싱중 오류가 발생헀습니다🤦‍♂️\n", e);
-    return null;
-  }
+    let certi = "";
+    number = number == undefined ? "" : number;
+    artistKr = artistKr == undefined ? "" : artistKr;
+    artistEn = artistEn == undefined ? "" : artistEn;
+    titleKr = titleKr == undefined ? "" : titleKr;
+    titleEn = titleEn == undefined ? "" : titleEn;
+    year = year == undefined ? "" : year;
+    certi = certi == undefined ? "" : certi;
+    sizeEdition = sizeEdition == undefined ? "" : sizeEdition;
+    materialKr = materialKr == undefined ? "" : materialKr;
+    materialEn = materialEn == undefined ? "" : materialEn;
+    signPosition = signPosition == undefined ? "" : signPosition;
+    auctionTitle = auctionTitle == undefined ? "" : auctionTitle;
+    estimateUnit = estimateUnit == undefined ? "" : estimateUnit;
+    estimateMin = estimateMin == undefined ? "" : estimateMin;
+    estimateMax = estimateMax == undefined ? "" : estimateMax;
+    return {
+      number,
+      artistKr,
+      artistEn,
+      titleKr,
+      titleEn,
+      year,
+      certi,
+      sizeEdition,
+      materialKr,
+      materialEn,
+      signPosition,
+      auctionTitle,
+      estimateUnit,
+      estimateMin,
+      estimateMax,
+    };
+  });
+  return desc;
 }

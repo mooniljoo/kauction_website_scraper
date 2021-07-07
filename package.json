@@ -1,7 +1,7 @@
 {
   "name": "scarper",
   "productName": "K-Auction Scraper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Auction Web Scraper with content",
   "main": "src/index.js",
   "scripts": {
