@@ -4,19 +4,45 @@ const rootPath = require("electron-root-path").rootPath;
 const shell = require("electron").shell;
 
 let boolRunning = true;
+let boolMax = false;
 
-document.addEventListener("DOMContentLoaded", (event) => {
+document.addEventListener("DOMContentLoaded", () => {
   console.log("Scraper DOM fully loaded");
   document.getElementById("input_dirPath").value = rootPath;
 });
+function btn_close() {
+  console.log("cl");
+  ipcRenderer.send("close");
+}
+function btn_minimize() {
+  boolMax = true;
+  ipcRenderer.send("minimize");
+}
+function btn_maximize() {
+  if (!boolMax) ipcRenderer.send("maximize");
+  boolMax = true;
+}
+function toggleMaximize() {
+  try {
+    if (boolMax) {
+      boolMax = false;
+      ipcRenderer.send("unmaximize");
+    } else {
+      boolMax = true;
+      ipcRenderer.send("maximize");
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
 function showNotification(title, msg) {
-  ipcRenderer.sendSync("showNotification", title, msg);
+  ipcRenderer.send("showNotification", title, msg);
 }
 function openDialogMsg(msg) {
-  ipcRenderer.sendSync("openDialogMsg", msg);
+  ipcRenderer.send("openDialogMsg", msg);
 }
 function openDialogError(msg) {
-  ipcRenderer.sendSync("openDialogError", msg);
+  ipcRenderer.send("openDialogError", msg);
 }
 function setLoading() {
   setStateMsg("불러오는 중입니다...");
@@ -81,7 +107,7 @@ function openDialogFile(el) {
 async function configureBrowser() {
   const browser = await puppeteer.launch({
     devtools: false,
-    headless: false,
+    headless: true,
     defaultViewport: null,
     args: ["--window-size=1280,1080"],
   });
@@ -190,7 +216,6 @@ async function scraper(url) {
       selector_auction = ".top_nav .Weekly-on > a";
     } else {
       throw new Error(`Error: 웹사이트의 구조가 바뀌었습니다.`);
-      break;
     }
 
     const button_auction = await page.$(selector_auction);
@@ -213,8 +238,8 @@ async function scraper(url) {
       let pageCount = 0;
 
       //get title
-      let source;
-      let transactDate;
+      let source = "";
+      let transactDate = "";
       setStateMsg(`${arrAuction[auctionIndex]} 경매의 출품처를 확인합니다...⏱`);
       try {
         const elem_title = await page.waitForSelector(".subtop-desc", {
@@ -232,6 +257,12 @@ async function scraper(url) {
         });
       } catch (e) {
         console.error(e);
+        await page.screenshot({
+          fullPage: true,
+          path: `kauction-gettitle-${new Date()
+            .toISOString()
+            .substr(0, 10)}.jpeg`,
+        });
         showNotification(
           `${arrAuction[auctionIndex]}경매 출품처 분석 실패🤷‍♂️`,
           "출품처와 경매일을 제외한 정보를 불러오겠습니다😂"
@@ -241,10 +272,18 @@ async function scraper(url) {
       while (boolRunning) {
         ///// ready for next page
         await page.waitForTimeout(500);
-        await page.waitForSelector(".paginate_button.active", {
-          timeout: 9000,
-        });
-        let paginateButton = await page.$$(".paginate_button.page-item > a");
+        let paginateButton;
+        try {
+          paginateButton = await page.$$(".paginate_button.page-item > a");
+        } catch (e) {
+          console.error(e);
+          await page.screenshot({
+            fullPage: true,
+            path: `kauction-page-item-${new Date()
+              .toISOString()
+              .substr(0, 10)}.jpeg`,
+          });
+        }
         let bool_isNextButtonDisabled = await page.$eval(
           ".paginate_button.active",
           (el) => {
@@ -261,7 +300,27 @@ async function scraper(url) {
         let artworkCount = 0;
         while (boolRunning) {
           await page.waitForTimeout(500);
-          const list = await page.waitForSelector("#list", { timeout: 9000 });
+          let list;
+          try {
+            list = await page.$("#list");
+          } catch (e) {
+            await page.screenshot({
+              fullPage: true,
+              path: `kauction-list-artworkIndex${artworkIndex}-${new Date()
+                .toISOString()
+                .substr(0, 10)}.jpeg`,
+            });
+            throw new puppeteer.TimeoutError("#list", e);
+          }
+          if (list == null) {
+            await page.screenshot({
+              fullPage: true,
+              path: `kauction-list-artworkIndex${artworkIndex}-${new Date()
+                .toISOString()
+                .substr(0, 10)}.jpeg`,
+            });
+            showNotification(`경매품목록`, "경매품 목록이 존재하지 않습니다.");
+          }
           const arrArtwork = await list.$$(".artwork > a");
           artworkCount = arrArtwork.length;
           //check if artwork exists
@@ -293,6 +352,12 @@ async function scraper(url) {
             }
           } catch (e) {
             console.error(e);
+            await page.screenshot({
+              fullPage: true,
+              path: `kauction-list-winningBid-${new Date()
+                .toISOString()
+                .substr(0, 10)}.jpeg`,
+            });
             showNotification(
               `${arrAuction[auctionIndex]}경매 낙찰가 분석 실패🤷‍♂️`,
               "낙찰가를 제외한 정보를 불러오겠습니다😂"
@@ -315,8 +380,14 @@ async function scraper(url) {
             setStateMsg(`정보를 성공적으로 불러왔습니다...⏱`);
           } catch (e) {
             console.error(e);
+            await page.screenshot({
+              fullPage: true,
+              path: `kauction-detailPage-parsing${artworkIndex + 1}-${new Date()
+                .toISOString()
+                .substr(0, 10)}.jpeg`,
+            });
             showNotification(
-              `분석 실패🤷‍♂️`,
+              `상세페이지 분석 실패🤷‍♂️`,
               `(${artworkIndex + 1}/${artworkCount}) ${innerDesc.number}|${
                 innerDesc.artistKr || innerDesc.artistEn
               }|${
@@ -356,7 +427,6 @@ async function scraper(url) {
         if (!resp.includes("Error")) {
           //success
           arrSuccessfulAuctionsSaved.push(resp);
-          setStateMsg("xlsx파일 생성 완료", `${resp}가 생성 되었습니다.`);
         } else {
           //fail
           arrFailedAuctionsSaved.push(resp);
@@ -450,16 +520,15 @@ function onRunning(el) {
       }
       //report result for user
       openDialogMsg(msg);
-      showNotification("실행종료!", msg);
     })
     .catch((e) => {
       unsetLoading();
       console.error(e);
       if (e instanceof ReferenceError) {
-        showNotification("에러발생!🤦‍♂️", e);
+        showNotification("에러발생!🤦", e);
       } else if (String(e).includes("TimeoutError")) {
         showNotification(
-          "에러발생!🤦‍♂️",
+          "에러발생!🤦",
           "페이지를 탐색하지 못했습니다. 사이트 디자인이나 구조가 변경되었을 수 있습니다.😥"
         );
       }

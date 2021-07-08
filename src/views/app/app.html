@@ -9,13 +9,16 @@
   </head>
   <body>
     <div class="wrap themed">
-      <!-- <header class="window_top"><div class="btn_box">
-          <i id="btn_exit" title="닫기"></i>
-          <i id="btn_minimize" title="최소화"></i>
-          <i id="btn_maximize" title="최대화"></i>
+      <header class="window_top">
+        <div class="btn_box">
+          <i id="btn_exit" title="닫기" onclick="btn_close()"></i>
+          <i id="btn_minimize" title="최소화" onclick="btn_minimize()"></i>
+          <i id="btn_maximize" title="최대화" onclick="toggleMaximize()"></i>
         </div>
-        <div class="title_box"><h1>Auction Website Scraper</h1></div>
-      </header> -->
+        <div class="title_box" onclick="toggleMaximize()">
+          <h1>K-Auction Scraper 1.1.0</h1>
+        </div>
+      </header>
       <div class="container">
         <nav>
           <!-- <p>

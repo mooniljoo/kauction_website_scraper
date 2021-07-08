@@ -56,14 +56,16 @@ if (require("electron-squirrel-startup")) {
   app.quit();
 }
 
+let win;
 const createWindow = () => {
   // Create the browser window.
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     minWidth: 1340,
     minHeight: 300,
     width: 1560,
     height: 720,
-    // frame: false,
+    frame: false,
+    titleBarStyle: "hidden",
     icon: path.join(__dirname, "src/icons/app.png"),
     webPreferences: {
       nodeIntegration: true,
@@ -75,7 +77,7 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   win.loadFile(path.join(__dirname, "/views/app/app.html"));
-  win.setMenuBarVisibility(false);
+  // win.setMenuBarVisibility(false);
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
 };
@@ -85,8 +87,8 @@ const createWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", createWindow);
 app.on("ready", () => {
-  if (process.platform !== "win32") {
-    app.setAppUserModelId(app.name);
+  if (process.platform === "win32") {
+    app.setAppUserModelId("auction scraper");
   }
 });
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -138,7 +140,7 @@ ipcMain.on("createXlsxFile", (event, res, dirName, auctionCategory) => {
         date + "_" + auctionTitle, //sheetName
         obj
       );
-      console.log("XLSX has created.");
+      showNotification("xlsx파일 생성 완료", `${fileName}가 생성 되었습니다.`);
       event.returnValue = fileName;
     }
   } catch (e) {
@@ -176,6 +178,22 @@ ipcMain.on("showNotification", (event, title, body) => {
   showNotification(title, body);
   event.returnValue = "";
 });
+try {
+  ipcMain.on("maximize", () => {
+    win.maximize();
+  });
+  ipcMain.on("unmaximize", () => {
+    win.unmaximize();
+  });
+  ipcMain.on("minimize", () => {
+    win.minimize();
+  });
+  ipcMain.on("close", () => {
+    win.close();
+  });
+} catch (e) {
+  console.log(e);
+}
 
 function showNotification(title, body) {
   const notification = {
