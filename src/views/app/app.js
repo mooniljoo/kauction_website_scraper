@@ -133,6 +133,18 @@ function getArrAuction() {
   return arrAuction;
 }
 
+async function check_popup(page) {
+  setStateMsg("팝업이 있는지 체크합니다...⏱");
+  try {
+    let mainpopup_bg = await page.$(".mainpopup-bg");
+    if (mainpopup_bg != null) {
+      await mainpopup_bg.click();
+    }
+    console.log(mainpopup_bg);
+  } catch (e) {
+    console.error(e);
+  }
+}
 async function scraper(url) {
   // set loading state
   setLoading();
@@ -154,6 +166,8 @@ async function scraper(url) {
   //access the website
   setStateMsg("사이트에 접근합니다...⏱");
   await page.goto(url, { waitUntil: "domcontentloaded" });
+
+  await check_popup(page);
 
   setStateMsg("로그인을 시도합니다...⏱");
   // click elem login
@@ -192,6 +206,8 @@ async function scraper(url) {
       "로그인이 필요하지 않은 정보들만 가져오겠습니다.😂"
     );
   }
+
+  await check_popup(page);
 
   ///////////////// LOOPS /////////////////
   setStateMsg("브라우저가 준비되었습니다...⏱");
