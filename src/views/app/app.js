@@ -316,6 +316,7 @@ async function scraper(url) {
         let artworkCount = 0;
         while (boolRunning) {
           await page.waitForTimeout(500);
+          await check_popup(page);
           let list;
           try {
             list = await page.$("#list");
@@ -324,7 +325,7 @@ async function scraper(url) {
               fullPage: true,
               path: `kauction-list-artworkIndex${artworkIndex}-${new Date()
                 .toISOString()
-                .substr(0, 10)}.jpeg`,
+                .substr(0, 10)}T${new Date().toTimeString().substr(0, 8)}.jpeg`,
             });
             throw new puppeteer.TimeoutError("#list", e);
           }
@@ -333,7 +334,7 @@ async function scraper(url) {
               fullPage: true,
               path: `kauction-list-artworkIndex${artworkIndex}-${new Date()
                 .toISOString()
-                .substr(0, 10)}.jpeg`,
+                .substr(0, 10)}T${new Date().toTimeString().substr(0, 8)}.jpeg`,
             });
             showNotification(`경매품목록`, "경매품 목록이 존재하지 않습니다.");
           }
@@ -372,7 +373,7 @@ async function scraper(url) {
               fullPage: true,
               path: `kauction-list-winningBid-${new Date()
                 .toISOString()
-                .substr(0, 10)}.jpeg`,
+                .substr(0, 10)}T${new Date().toTimeString().substr(0, 8)}.jpeg`,
             });
             showNotification(
               `${arrAuction[auctionIndex]}경매 낙찰가 분석 실패🤷‍♂️`,
@@ -384,7 +385,17 @@ async function scraper(url) {
 
           //access to new artwork page
           setStateMsg(`상세페이지에 접근시도합니다...⏱`);
-          arrArtwork[artworkIndex].click();
+          try {
+            arrArtwork[artworkIndex].click();
+          } catch (e) {
+            console.error(e);
+            await page.screenshot({
+              fullPage: true,
+              path: `kauction-try-access-detail-${new Date()
+                .toISOString()
+                .substr(0, 10)}T${new Date().toTimeString().substr(0, 8)}.jpeg`,
+            });
+          }
 
           // parsing inner description of artwork
           await page.waitForTimeout(1000);
@@ -394,13 +405,16 @@ async function scraper(url) {
           try {
             innerDesc = await parsing(page);
             setStateMsg(`정보를 성공적으로 불러왔습니다...⏱`);
+            console.log(
+              `${innerDesc.number},${innerDesc.artistKr},${innerDesc.titleKr}`
+            );
           } catch (e) {
             console.error(e);
             await page.screenshot({
               fullPage: true,
               path: `kauction-detailPage-parsing${artworkIndex + 1}-${new Date()
                 .toISOString()
-                .substr(0, 10)}.jpeg`,
+                .substr(0, 10)}T${new Date().toTimeString().substr(0, 8)}.jpeg`,
             });
             showNotification(
               `상세페이지 분석 실패🤷‍♂️`,
