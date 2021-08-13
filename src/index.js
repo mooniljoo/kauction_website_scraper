@@ -119,10 +119,13 @@ ipcMain.on("createXlsxFile", (event, res, dirName, auctionCategory) => {
     } else {
       let auctionTitle = res[0].auctionTitle;
       let source = res[0].source;
-      console.log(res[0].transactDate);
+      console.log("auctionTitle", res[0].auctionTitle);
+      console.log("source", res[0].source);
+      console.log("transactDate", res[0].transactDate);
       let transactDate = res[0].transactDate
+        .split("(")[0]
         .replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "")
-        .split(" ");
+        .split("/");
       let year = transactDate[0].substr(2);
       let mon =
         transactDate[1].length == 1 ? "0" + transactDate[1] : transactDate[1];
@@ -130,14 +133,14 @@ ipcMain.on("createXlsxFile", (event, res, dirName, auctionCategory) => {
       day = day.length == 1 ? "0" + day : day;
       let date = year + mon + day;
       // let auctionTitle = res[0].auctionTitle.replace(/[\s]/g, "");
-      let fileName = auctionTitle + "_" + date + "_" + auctionCategory;
+      let fileName = "케이옥션" + "_" + date + "_" + auctionCategory;
       console.log("fileName", fileName);
 
       let obj = renameObj(res);
       fileName = jsonToXlsx.write(
         dirName, //dirName
         fileName, //fileName
-        date + "_" + auctionTitle, //sheetName
+        auctionCategory, //sheetName
         obj
       );
       showNotification("xlsx파일 생성 완료", `${fileName}가 생성 되었습니다.`);
